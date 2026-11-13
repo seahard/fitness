@@ -10,12 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BodyRecords">
 
-    <!-- Firebase SDK (Modular CDN) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        
-        // Firebase Konfigürasyonunuzu buraya ekleyebilirsiniz
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyC6IVVpFoZuawKLHVT8R3wXhp3XUnTqaFE",
             authDomain: "fitness-8ecf7.firebaseapp.com",
@@ -26,18 +24,22 @@
             appId: "1:1088852669752:web:00b29e784caa74003f7dcd"
         };
 
-        // Firebase global olarak window'a bağlanır (isterseniz)
-        window.firebaseInitialized = false;
+        window.fbReady = false;
         try {
             const app = initializeApp(firebaseConfig);
-            window.db = getDatabase(app);
-            window.firebaseRef = ref;
-            window.firebaseSet = set;
-            window.firebaseGet = get;
-            window.firebaseChild = child;
-            window.firebaseInitialized = true;
-        } catch(e) {
-            console.log("Firebase offline mode / Not configured yet", e);
+            const db = getFirestore(app);
+            window.fbDb = db;
+            window.fbDoc = doc;
+            window.fbSetDoc = setDoc;
+            window.fbGetDoc = getDoc;
+            window.fbCollection = collection;
+            window.fbGetDocs = getDocs;
+            window.fbReady = true;
+            if (typeof window.onFirebaseInit === 'function') {
+                window.onFirebaseInit();
+            }
+        } catch (err) {
+            console.error("Firebase init error:", err);
         }
     </script>
 
@@ -83,6 +85,46 @@
             display: flex;
             flex-direction: column;
             position: relative;
+        }
+
+        .top-sync-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .sync-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+            transition: all 0.25s ease;
+        }
+
+        .sync-indicator.unsynced .sync-dot {
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        .sync-indicator.syncing .sync-dot {
+            background-color: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
         }
 
         .view {
@@ -167,7 +209,7 @@
             align-items: center;
             padding: 12px 0;
             border-bottom: 1px solid var(--border-color);
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .user-profile-badge {
@@ -269,8 +311,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 0;
-            border-bottom: 1px dashed rgba(255,255,255,0.05);
+            padding: 6px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.08);
             gap: 6px;
         }
 
@@ -308,22 +350,6 @@
             opacity: 0.6;
             letter-spacing: 0.5px;
         }
-        
-        .sync-status {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            background: rgba(255,165,2,0.15);
-            color: var(--warning);
-            border: 1px solid var(--warning);
-            display: inline-block;
-            margin-top: 2px;
-        }
-        .sync-status.synced {
-            background: rgba(0,255,136,0.15);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
     </style>
 </head>
 <body>
@@ -332,14 +358,22 @@
 
     <div class="app-container">
 
+        <!-- TÜM SAYFALARDA GÖRÜNEN SENKRONİZASYON DURUM SİMGESİ -->
+        <div class="top-sync-bar">
+            <div id="globalSyncIndicator" class="sync-indicator" onclick="manualSyncClick()" title="Bulut Senkronizasyon Durumu">
+                <span class="sync-dot"></span>
+                <span id="globalSyncLabel">Senkronize</span>
+            </div>
+        </div>
+
         <!-- SAYFA 1: GİRİŞ EKRANI -->
         <div id="viewPage1" class="view active">
-            <div style="text-align: center; margin: 20px 0 10px 0;">
+            <div style="text-align: center; margin: 12px 0 10px 0;">
                 <h1 style="font-size: 26px; color: var(--primary); letter-spacing: -0.5px;">Fitness & Body Records</h1>
                 <p style="margin-top: 6px; font-weight: 500;">Tahmin etmeyi bırak, gelişimini ölç.</p>
             </div>
 
-            <div class="card" style="margin-top: 10px;">
+            <div class="card" style="margin-top: 6px;">
                 <h2 style="font-size: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Kullanıcı Girişi</h2>
                 
                 <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -373,40 +407,38 @@
                     <div>
                         <h3 id="userNameHeader" style="font-size: 16px;">-</h3>
                         <p style="font-size: 11px; color: var(--primary);">Profili Düzenle</p>
-                        <div id="syncStatusBadge" class="sync-status">Offline (Yerel)</div>
                     </div>
                 </div>
-                <button class="btn btn-secondary" style="font-size: 11px; padding: 8px 10px;" onclick="handleSync()">Şimdi Senkronize Et ☁️</button>
+                <button class="btn btn-secondary" style="font-size: 11px; padding: 8px 10px;" onclick="syncToCloud(true)">Şimdi Senkronize Et</button>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="btn" style="padding: 18px; font-size: 16px;" onclick="requestNavigation('viewWorkoutMenu')">🏋️‍♂️ Antrenman Programı</button>
-                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="requestNavigation('viewHealthInput')">📏 Sağlık Verisi Gir</button>
-                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="requestNavigation('viewReports')">📊 Antrenman ve Sağlık Raporu</button>
-                <button class="btn btn-danger" style="padding: 14px; margin-top: 20px;" onclick="handleLogoutWithCheck()">Kullanıcı Çıkışı Yap</button>
+                <button class="btn" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewWorkoutMenu')">🏋️‍♂️ Antrenman Programı</button>
+                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewHealthInput')">📏 Sağlık Verisi Gir</button>
+                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewReports')">📊 Antrenman ve Sağlık Raporu</button>
+                <button class="btn btn-danger" style="padding: 14px; margin-top: 20px;" onclick="handleLogout()">Kullanıcı Çıkışı Yap</button>
             </div>
         </div>
 
         <!-- ANTRENMAN MENÜSÜ -->
         <div id="viewWorkoutMenu" class="view">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="requestNavigation('viewPage2')">←</button>
+                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
                 <h2>Antrenman Yönetimi</h2>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn" style="flex: 1;" onclick="openCreateProgramModal()">+ Yeni Program</button>
-                <button class="btn btn-secondary" style="flex: 1;" onclick="openEditProgramListModal()">⚙️ Program Düzenle</button>
+            <div style="margin-top: 8px;">
+                <button class="btn btn-secondary" style="width: 100%;" onclick="openEditProgramListModal()">⚙️ Program Düzenle</button>
             </div>
 
-            <h3 style="font-size: 15px; margin-top: 16px; color: var(--text-muted);">Mevcut Programlar</h3>
+            <h3 style="font-size: 15px; margin-top: 12px; color: var(--text-muted);">Mevcut Programlar</h3>
             <div id="programListContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <!-- PROGRAM DETAY EKRANI -->
         <div id="viewWorkoutDetail" class="view">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="requestNavigation('viewWorkoutMenu')">←</button>
+                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewWorkoutMenu')">←</button>
                 <h2 id="workoutDetailTitle">Program Detayı</h2>
             </div>
 
@@ -421,7 +453,7 @@
         <!-- SAĞLIK VERİSİ EKRANI -->
         <div id="viewHealthInput" class="view">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="requestNavigation('viewPage2')">←</button>
+                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
                 <h2>Sağlık & Vücut Ölçüleri</h2>
             </div>
 
@@ -454,7 +486,7 @@
         <!-- RAPORLAR EKRANI -->
         <div id="viewReports" class="view">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="requestNavigation('viewPage2')">←</button>
+                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
                 <h2>Gelişim Raporları</h2>
             </div>
 
@@ -480,8 +512,13 @@
         <div class="modal-content">
             <h3>Geçmiş Seti Düzenle</h3>
             <p id="editHistoryMeta" style="font-size:12px; color:var(--primary);"></p>
+            <div>
+                <label>Antrenman Tarihi</label>
+                <input type="date" id="editHistoryDateInput" onchange="validateWorkoutDate(this)">
+            </div>
             <div id="editHistorySetsContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="addRowToEditHistory()">+ Yeni Set Satırı Ekle</button>
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
                 <button class="btn" style="flex: 1;" onclick="saveEditedHistory()">Değişiklikleri Kaydet</button>
                 <button class="btn btn-secondary" onclick="closeModal('modalEditHistory')">İptal</button>
             </div>
@@ -564,12 +601,15 @@
         </div>
     </div>
 
-    <!-- PROGRAM DÜZENLEME & HAREKET EKLE/ÇIKAR MODAL -->
+    <!-- PROGRAM DÜZENLEME & YENİ PROGRAM & HAREKET EKLE/DÜZENLE/ÇIKAR MODAL -->
     <div id="modalEditProgramList" class="modal">
         <div class="modal-content">
-            <h3>Program Yönetimi & Egzersiz Düzenle</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>Program Yönetimi</h3>
+                <button class="btn" style="font-size:11px; padding:8px 12px;" onclick="openCreateProgramModal()">+ Yeni Program</button>
+            </div>
             <div id="editProgramListContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-            <button class="btn btn-secondary" onclick="closeModal('modalEditProgramList')">Kapat</button>
+            <button class="btn btn-secondary" onclick="closeModalAndAutoSync('modalEditProgramList')">Kapat</button>
         </div>
     </div>
 
@@ -585,10 +625,10 @@
         </div>
     </div>
 
-    <!-- HAREKET EKLEME MODAL -->
+    <!-- HAREKET EKLEME / DÜZENLEME MODAL -->
     <div id="modalAddExercise" class="modal">
         <div class="modal-content">
-            <h3>Programa Egzersiz Ekle</h3>
+            <h3 id="exerciseModalTitle">Programa Egzersiz Ekle</h3>
             <div>
                 <label>Kas Grubu Seç</label>
                 <select id="categorySelect" onchange="onCategoryChange()"></select>
@@ -607,7 +647,7 @@
                 </label>
             </div>
             <div style="display: flex; gap: 8px;">
-                <button class="btn" style="flex: 1;" onclick="confirmAddExerciseToProgram()">Ekle</button>
+                <button class="btn" style="flex: 1;" id="exerciseModalSaveBtn" onclick="confirmExerciseAction()">Ekle</button>
                 <button class="btn btn-secondary" onclick="closeModal('modalAddExercise')">İptal</button>
             </div>
         </div>
@@ -618,7 +658,7 @@
         <div class="modal-content">
             <h3>Geçmiş Ölçümler & Düzenle/Sil</h3>
             <div id="healthHistoryList" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;"></div>
-            <button class="btn btn-secondary" onclick="closeModal('modalHealthHistory')">Kapat</button>
+            <button class="btn btn-secondary" onclick="closeModalAndAutoSync('modalHealthHistory')">Kapat</button>
         </div>
     </div>
 
@@ -640,14 +680,186 @@
         let currentUser = null;
         let selectedProgramId = null;
         let selectedAddExerciseName = "";
+        let editingExerciseIndex = null;
         let regAvatarBase64 = "";
         let hasUnsyncedChanges = false;
+        let isSyncingNow = false;
 
-        document.addEventListener("DOMContentLoaded", () => {
+        window.onFirebaseInit = async function() {
+            await pullAllUsersFromCloud();
+            populateLoginUserDropdown();
+            if (currentUser) {
+                await pullUserDataFromCloud(currentUser);
+                refreshCurrentView();
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", async () => {
             initDefaultUser();
             populateLoginUserDropdown();
             setTodayDates();
+            updateSyncIndicator();
+
+            if (window.fbReady) {
+                await pullAllUsersFromCloud();
+                populateLoginUserDropdown();
+            }
         });
+
+        window.addEventListener("online", () => {
+            if (hasUnsyncedChanges && currentUser) {
+                syncToCloud(false);
+            }
+        });
+
+        window.addEventListener("beforeunload", () => {
+            if (hasUnsyncedChanges && currentUser) {
+                syncToCloud(false);
+            }
+        });
+
+        function updateSyncIndicator() {
+            const indicator = document.getElementById("globalSyncIndicator");
+            const label = document.getElementById("globalSyncLabel");
+            if (!indicator || !label) return;
+
+            indicator.classList.remove("unsynced", "syncing");
+            if (isSyncingNow) {
+                indicator.classList.add("syncing");
+                label.innerText = "Senkronize Ediliyor...";
+            } else if (hasUnsyncedChanges) {
+                indicator.classList.add("unsynced");
+                label.innerText = "Senkronize Bekliyor";
+            } else {
+                label.innerText = "Senkronize";
+            }
+        }
+
+        function markDirty() {
+            hasUnsyncedChanges = true;
+            updateSyncIndicator();
+        }
+
+        function markClean() {
+            hasUnsyncedChanges = false;
+            updateSyncIndicator();
+        }
+
+        function manualSyncClick() {
+            if (!currentUser) {
+                showToast("Önce giriş yapmalısınız.", "warning");
+                return;
+            }
+            syncToCloud(true);
+        }
+
+        // BULUT SENKRONİZASYONU (FIRESTORE)
+        async function syncToCloud(showNotification = false) {
+            if (!currentUser) return;
+            if (!window.fbReady || !window.fbDb) {
+                if (showNotification) showToast("Bulut bağlantısı çevrimdışı, veriler cihazda güvende.", "warning");
+                return;
+            }
+            if (!navigator.onLine) {
+                if (showNotification) showToast("İnternet bağlantısı yok. Çevrimiçi olunca otomatik senkronize edilecek.", "warning");
+                return;
+            }
+
+            isSyncingNow = true;
+            updateSyncIndicator();
+
+            try {
+                const usersDb = getUsersDB();
+                const userProfile = usersDb[currentUser] || {};
+                const userData = getUserData(currentUser);
+
+                const payload = {
+                    profile: userProfile,
+                    programs: userData.programs || [],
+                    history: userData.history || [],
+                    health: userData.health || [],
+                    updatedAt: new Date().toISOString()
+                };
+
+                const userRef = window.fbDoc(window.fbDb, "fitness_users", currentUser);
+                await window.fbSetDoc(userRef, payload, { merge: true });
+
+                isSyncingNow = false;
+                markClean();
+                if (showNotification) {
+                    showToast("Tüm veriler buluta başarıyla senkronize edildi!", "info");
+                }
+            } catch (err) {
+                console.error("Cloud sync failed:", err);
+                isSyncingNow = false;
+                updateSyncIndicator();
+                if (showNotification) {
+                    showToast("Senkronizasyon hatası! Veriler yerel hafızada tutuldu.", "error");
+                }
+            }
+        }
+
+        async function pullAllUsersFromCloud() {
+            if (!window.fbReady || !window.fbDb || !navigator.onLine) return;
+            try {
+                const colRef = window.fbCollection(window.fbDb, "fitness_users");
+                const snapshot = await window.fbGetDocs(colRef);
+                const localUsers = getUsersDB();
+                let changed = false;
+
+                snapshot.forEach(docSnap => {
+                    const uname = docSnap.id;
+                    const data = docSnap.data();
+                    if (data && data.profile) {
+                        localUsers[uname] = data.profile;
+                        changed = true;
+                    }
+                    if (data && (data.programs || data.history || data.health)) {
+                        const existingLocal = getUserData(uname);
+                        if (!hasUnsyncedChanges || uname !== currentUser) {
+                            localStorage.setItem(`fbr_user_${uname}`, JSON.stringify({
+                                programs: data.programs || existingLocal.programs || [],
+                                history: data.history || existingLocal.history || [],
+                                health: data.health || existingLocal.health || []
+                            }));
+                        }
+                    }
+                });
+
+                if (changed) {
+                    localStorage.setItem("fbr_users_db", JSON.stringify(localUsers));
+                }
+            } catch (err) {
+                console.error("Cloud fetch users error:", err);
+            }
+        }
+
+        async function pullUserDataFromCloud(username) {
+            if (!window.fbReady || !window.fbDb || !navigator.onLine) return false;
+            try {
+                const userRef = window.fbDoc(window.fbDb, "fitness_users", username);
+                const snap = await window.fbGetDoc(userRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.profile) {
+                        const usersDb = getUsersDB();
+                        usersDb[username] = data.profile;
+                        localStorage.setItem("fbr_users_db", JSON.stringify(usersDb));
+                    }
+                    const cloudUserData = {
+                        programs: Array.isArray(data.programs) ? data.programs : [],
+                        history: Array.isArray(data.history) ? data.history : [],
+                        health: Array.isArray(data.health) ? data.health : []
+                    };
+                    localStorage.setItem(`fbr_user_${username}`, JSON.stringify(cloudUserData));
+                    markClean();
+                    return true;
+                }
+            } catch (err) {
+                console.error("Pull user data error:", err);
+            }
+            return false;
+        }
 
         function showToast(msg, type = "info") {
             const container = document.getElementById("toastContainer");
@@ -658,108 +870,92 @@
             setTimeout(() => toast.remove(), 4000);
         }
 
+        function getTodayStr() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function setTodayDates() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayStr();
             const wInput = document.getElementById("workoutDateInput");
             const hInput = document.getElementById("healthDateInput");
-            if(wInput) { wInput.value = today; wInput.max = today; }
-            if(hInput) { hInput.value = today; hInput.max = today; }
+            const eInput = document.getElementById("editHistoryDateInput");
+            if (wInput) { wInput.value = today; wInput.max = today; }
+            if (hInput) { hInput.value = today; hInput.max = today; }
+            if (eInput) { eInput.max = today; }
         }
 
         function validateWorkoutDate(input) {
-            const today = new Date().toISOString().split('T')[0];
-            if(input.value > today) {
-                showToast("Antrenman tarihi gelecekte olamaz!", "error");
+            const today = getTodayStr();
+            if (input.value > today) {
+                showToast("Hata: Güncel tarihin ilerisinde bir antrenman tarihi seçilemez!", "error");
                 input.value = today;
             }
         }
 
         function validateHealthDate(input) {
-            const today = new Date().toISOString().split('T')[0];
-            if(input.value > today) {
-                showToast("Ölçüm tarihi gelecekte olamaz!", "error");
+            const today = getTodayStr();
+            if (input.value > today) {
+                showToast("Hata: Güncel tarihin ilerisinde bir ölçüm tarihi seçilemez!", "error");
                 input.value = today;
             }
         }
 
-        function requestNavigation(targetViewId) {
-            if(hasUnsyncedChanges && currentUser) {
-                if(confirm("Kaydedilmemiş/Senkronize edilmemiş değişiklikleriniz var. Şimdi buluta senkronize etmek ister misiniz?")) {
-                    handleSync(() => navigateTo(targetViewId));
-                    return;
-                }
-            }
-            navigateTo(targetViewId);
-        }
-
+        // MENÜDEN ÇIKARKEN POP-UP OLMADAN OTOMATİK SENKRONİZASYON
         function navigateTo(viewId) {
+            if (currentUser && hasUnsyncedChanges) {
+                syncToCloud(false);
+            }
             document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
             document.getElementById(viewId).classList.add("active");
-            if(viewId === 'viewWorkoutMenu') renderProgramList();
-            if(viewId === 'viewReports') renderReports();
+            if (viewId === 'viewWorkoutMenu') renderProgramList();
+            if (viewId === 'viewReports') renderReports();
         }
 
-        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
-        function openModal(modalId) { document.getElementById(modalId).style.display = "flex"; }
+        function refreshCurrentView() {
+            const activeView = document.querySelector(".view.active");
+            if (!activeView) return;
+            if (activeView.id === 'viewWorkoutMenu') renderProgramList();
+            if (activeView.id === 'viewWorkoutDetail' && selectedProgramId) renderWorkoutExercises();
+            if (activeView.id === 'viewReports') renderReports();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        function closeModalAndAutoSync(modalId) {
+            closeModal(modalId);
+            if (currentUser && hasUnsyncedChanges) {
+                syncToCloud(false);
+            }
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = "flex";
+        }
 
         function getUsersDB() { return JSON.parse(localStorage.getItem("fbr_users_db") || "{}"); }
-        function saveUsersDB(db) { localStorage.setItem("fbr_users_db", JSON.stringify(db)); markUnsynced(); }
-        function getUserData(username) { return JSON.parse(localStorage.getItem(`fbr_user_${username}`) || "{}"); }
-        function saveUserData(username, data) { 
-            localStorage.setItem(`fbr_user_${username}`, JSON.stringify(data)); 
-            markUnsynced();
+        function saveUsersDB(db) {
+            localStorage.setItem("fbr_users_db", JSON.stringify(db));
+            if (currentUser) markDirty();
+        }
+        function getUserData(username) {
+            const raw = JSON.parse(localStorage.getItem(`fbr_user_${username}`) || "{}");
+            return {
+                programs: Array.isArray(raw.programs) ? raw.programs : [],
+                history: Array.isArray(raw.history) ? raw.history : [],
+                health: Array.isArray(raw.health) ? raw.health : []
+            };
+        }
+        function saveUserData(username, data) {
+            localStorage.setItem(`fbr_user_${username}`, JSON.stringify(data));
+            if (currentUser) markDirty();
         }
 
-        function markUnsynced() {
-            hasUnsyncedChanges = true;
-            const badge = document.getElementById("syncStatusBadge");
-            if(badge) {
-                badge.innerText = "Senkronize Edilmedi ⚠️";
-                badge.className = "sync-status";
-            }
-        }
-
-        function markSynced() {
-            hasUnsyncedChanges = false;
-            const badge = document.getElementById("syncStatusBadge");
-            if(badge) {
-                badge.innerText = "Buluta Senkronize ✅";
-                badge.className = "sync-status synced";
-            }
-        }
-
-        // FIREBASE SYNC & OFFLINE HANDLER
-        async function handleSync(callback = null) {
-            if(!currentUser) return;
-            
-            showToast("Senkronizasyon başlatıldı...", "info");
-
-            // Eğer Firebase yapılandırıldıysa online yükleme yap
-            if(window.firebaseInitialized && window.db) {
-                try {
-                    const uData = getUserData(currentUser);
-                    const dbRef = window.firebaseRef(window.db, `users/${currentUser}`);
-                    await window.firebaseSet(dbRef, uData);
-                    
-                    markSynced();
-                    showToast("Veriler başarıyla Firebase buluta senkronize edildi! ☁️", "info");
-                    if(callback) callback();
-                    return;
-                } catch(e) {
-                    console.error("Firebase sync error:", e);
-                    showToast("İnternet bağlantısı yok veya Firebase hatası! Offline modda devam ediliyor.", "warning");
-                }
-            } else {
-                // Firebase henüz yapılandırılmadıysa ya da offline ise simüle et veya yerel olarak tut
-                setTimeout(() => {
-                    markSynced();
-                    showToast("Çevrimdışı senkronizasyon tamamlandı (Yerel kaydedildi).", "info");
-                    if(callback) callback();
-                }, 500);
-            }
-        }
-
-        // TELEFON FORMATI DOĞRULAMA REGEX (+90 5XX XXX XX XX)
         function isValidTurkishPhone(phone) {
             const regex = /^(\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}$/;
             return regex.test(phone.trim());
@@ -771,74 +967,67 @@
 
         function initDefaultUser() {
             const db = getUsersDB();
-            if(!db["Yavuz"]) {
+            if (!db["Yavuz"]) {
                 db["Yavuz"] = { 
                     password: "1234", email: "yavuz@deniz.com", phone: "+90 532 100 00 00", gender: "Erkek", age: 45, 
                     secQuestion: "En sevdiğin spor?", secAnswer: "fitness", avatar: "" 
                 };
-                saveUsersDB(db);
+                localStorage.setItem("fbr_users_db", JSON.stringify(db));
 
                 const yavuzData = {
                     programs: [{ id: "p1", name: "Göğüs & Ön Kol", exercises: [{ name: "Barbell Bench Press", weighted: true }, { name: "Barbell Biceps Curl", weighted: true }] }],
                     history: [],
                     health: []
                 };
-                saveUserData("Yavuz", yavuzData);
+                localStorage.setItem("fbr_user_Yavuz", JSON.stringify(yavuzData));
             }
         }
 
         function populateLoginUserDropdown() {
             const db = getUsersDB();
             const select = document.getElementById("loginUserSelect");
+            const prevVal = select.value;
             select.innerHTML = '<option value="">-- Sporcu Seçin --</option>';
-            Object.keys(db).forEach(u => select.innerHTML += `<option value="${u}">${u}</option>`);
+            Object.keys(db).forEach(u => {
+                select.innerHTML += `<option value="${u}">${u}</option>`;
+            });
+            if (prevVal && db[prevVal]) select.value = prevVal;
         }
 
         async function handleLogin() {
             const username = document.getElementById("loginUserSelect").value;
             const pass = document.getElementById("loginPassword").value;
 
-            if(!username) return showToast("Lütfen bir sporcu seçin", "warning");
+            if (!username) return showToast("Lütfen bir sporcu seçin", "warning");
+
+            await pullUserDataFromCloud(username);
 
             const db = getUsersDB();
-            if(db[username] && db[username].password === pass) {
+            if (db[username] && db[username].password === pass) {
                 currentUser = username;
                 document.getElementById("userNameHeader").innerText = currentUser;
                 document.getElementById("userAvatarHeader").src = db[username].avatar || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231c273e'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2300ff88'>👤</text></svg>";
                 
-                // Firebase'den veri çekmeyi dene (varsa)
-                if(window.firebaseInitialized && window.db) {
-                    try {
-                        const snapshot = await window.firebaseGet(window.firebaseChild(window.firebaseRef(window.db), `users/${username}`));
-                        if(snapshot.exists()) {
-                            localStorage.setItem(`fbr_user_${username}`, JSON.stringify(snapshot.val()));
-                        }
-                    } catch(e) {
-                        console.log("Cloud fetch offline, using local data.");
-                    }
+                const cloudExists = await pullUserDataFromCloud(username);
+                if (!cloudExists) {
+                    await syncToCloud(false);
+                } else {
+                    markClean();
                 }
 
                 showToast(`Hoş geldin, ${currentUser}!`, "info");
-                markSynced();
                 navigateTo("viewPage2");
             } else {
                 showToast("Hatalı şifre veya kullanıcı!", "error");
             }
         }
 
-        function handleLogoutWithCheck() {
-            if(hasUnsyncedChanges) {
-                if(confirm("Kaydedilmemiş değişiklikleriniz var. Çıkış yapmadan önce senkronize etmek ister misiniz?")) {
-                    handleSync(() => performLogout());
-                    return;
-                }
+        async function handleLogout() {
+            if (currentUser && hasUnsyncedChanges) {
+                await syncToCloud(false);
             }
-            performLogout();
-        }
-
-        function performLogout() {
             currentUser = null;
-            hasUnsyncedChanges = false;
+            markClean();
             document.getElementById("loginPassword").value = "";
             navigateTo("viewPage1");
         }
@@ -848,7 +1037,7 @@
 
         function handleAvatarSelect(evt) {
             const file = evt.target.files[0];
-            if(file) {
+            if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -866,7 +1055,7 @@
             }
         }
 
-        function submitRegistration() {
+        async function submitRegistration() {
             const u = document.getElementById("regUsername").value.trim();
             const p = document.getElementById("regPassword").value.trim();
             const e = document.getElementById("regEmail").value.trim();
@@ -876,20 +1065,35 @@
             const q = document.getElementById("regSecQuestion").value.trim();
             const ans = document.getElementById("regSecAnswer").value.trim();
 
-            if(!u || !p || !e || !ph || !a || !q || !ans) {
+            if (!u || !p || !e || !ph || !a || !q || !ans) {
                 return showToast("Lütfen tüm zorunlu (*) alanları doldurun!", "warning");
             }
 
-            if(!isValidTurkishPhone(ph)) {
+            if (!isValidTurkishPhone(ph)) {
                 return showToast("Hata: Telefon numarası geçersiz! Lütfen (+90 532 100 00 00) formatında giriniz.", "error");
             }
 
             const db = getUsersDB();
-            if(db[u]) return showToast("Bu kullanıcı adı zaten mevcut!", "error");
+            if (db[u]) return showToast("Bu kullanıcı adı zaten mevcut!", "error");
 
             db[u] = { password: p, email: e, phone: ph, gender: g, age: a, secQuestion: q, secAnswer: ans.toLowerCase(), avatar: regAvatarBase64 };
             saveUsersDB(db);
             saveUserData(u, { programs: [], history: [], health: [] });
+
+            if (window.fbReady && window.fbDb && navigator.onLine) {
+                try {
+                    const userRef = window.fbDoc(window.fbDb, "fitness_users", u);
+                    await window.fbSetDoc(userRef, {
+                        profile: db[u],
+                        programs: [],
+                        history: [],
+                        health: [],
+                        updatedAt: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.error("Cloud register sync error:", err);
+                }
+            }
 
             populateLoginUserDropdown();
             closeModal("modalRegister");
@@ -908,16 +1112,16 @@
 
         function verifyForgotIdentity() {
             const input = document.getElementById("forgotIdentityInput").value.trim();
-            if(!input) return showToast("E-Posta veya Telefon giriniz!", "warning");
+            if (!input) return showToast("E-Posta veya Telefon giriniz!", "warning");
 
             const db = getUsersDB();
             targetForgotUser = null;
 
             Object.keys(db).forEach(u => {
-                if(db[u].email === input || db[u].phone === input) targetForgotUser = u;
+                if (db[u].email === input || db[u].phone === input) targetForgotUser = u;
             });
 
-            if(targetForgotUser) {
+            if (targetForgotUser) {
                 const uData = db[targetForgotUser];
                 document.getElementById("forgotQuestionText").innerText = `Soru: "${uData.secQuestion}"`;
                 document.getElementById("forgotStep1").style.display = "none";
@@ -932,8 +1136,9 @@
             const db = getUsersDB();
             const uData = db[targetForgotUser];
 
-            if(ans && ans === uData.secAnswer) {
-                alert(`Doğrulama Başarılı!\nKullanıcı Şifreniz: ${uData.password}`);
+            if (ans && ans === uData.secAnswer) {
+                alert(`Doğrulama Başarılı!
+Kullanıcı Şifreniz: ${uData.password}`);
                 closeModal("modalForgotPassword");
             } else {
                 alert("Girdiğiniz cevap hatalı. Lütfen tekrar deneyiniz veya sistem yöneticisi Yavuz Deniz ile iletişime geçiniz.");
@@ -955,17 +1160,17 @@
             const uData = db[currentUser];
             const newPhone = document.getElementById("editPhone").value.trim();
 
-            if(newPhone && !isValidTurkishPhone(newPhone)) {
+            if (newPhone && !isValidTurkishPhone(newPhone)) {
                 return showToast("Geçersiz telefon formatı! (+90 5XX...)", "error");
             }
 
             uData.email = document.getElementById("editEmail").value.trim();
-            if(newPhone) uData.phone = newPhone;
+            if (newPhone) uData.phone = newPhone;
             const newPass = document.getElementById("editPassword").value.trim();
-            if(newPass) uData.password = newPass;
+            if (newPass) uData.password = newPass;
 
             saveUsersDB(db);
-            closeModal("modalProfileUpdate");
+            closeModalAndAutoSync("modalProfileUpdate");
             showToast("Profil güncellendi!", "info");
         }
 
@@ -975,8 +1180,8 @@
             const container = document.getElementById("programListContainer");
             container.innerHTML = "";
 
-            if(!uData.programs || uData.programs.length === 0) {
-                container.innerHTML = '<p>Henüz tanımlı antrenman programı yok.</p>';
+            if (uData.programs.length === 0) {
+                container.innerHTML = '<p>Henüz tanımlı antrenman programı yok. "Program Düzenle" menüsünden oluşturabilirsiniz.</p>';
                 return;
             }
 
@@ -1002,9 +1207,18 @@
             const uData = getUserData(currentUser);
             const prog = uData.programs.find(p => p.id === progId);
             document.getElementById("workoutDetailTitle").innerText = prog.name;
-
+            setTodayDates();
             renderWorkoutExercises();
             navigateTo("viewWorkoutDetail");
+        }
+
+        function sortHistoryByWorkoutDateDesc(records) {
+            return [...records].sort((a, b) => {
+                if (b.date !== a.date) {
+                    return b.date.localeCompare(a.date);
+                }
+                return String(b.id).localeCompare(String(a.id));
+            });
         }
 
         function renderWorkoutExercises() {
@@ -1013,22 +1227,27 @@
             const container = document.getElementById("exercisesContainer");
             container.innerHTML = "";
 
+            if (!prog) return;
+
             prog.exercises.forEach((ex, exIdx) => {
                 const card = document.createElement("div");
                 card.className = "card";
 
-                // Last 5 Sets Records History
-                const exHistory = uData.history.filter(h => h.exerciseName === ex.name).slice(-5).reverse();
+                // Setin yapıldığı belirtilen tarihe göre sıralama (en yeni antrenman tarihi en üstte)
+                const sortedHistory = sortHistoryByWorkoutDateDesc(
+                    uData.history.filter(h => h.exerciseName === ex.name)
+                ).slice(0, 5);
+
                 let historyHtml = "";
-                if(exHistory.length > 0) {
-                    exHistory.forEach(h => {
-                        const setDöküm = h.sets.map(s => `${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}t`).join(', ');
+                if (sortedHistory.length > 0) {
+                    sortedHistory.forEach(h => {
+                        const setDokum = h.sets.map(s => `${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}t`).join(', ');
                         historyHtml += `
                             <div class="history-row">
-                                <span style="font-size:12px;">📅 ${h.date}: ${setDöküm}</span>
+                                <span style="font-size:12px; flex:1;">📅 ${h.date}: ${setDokum}</span>
                                 <div style="display:flex; gap:4px;">
-                                    <button class="btn btn-secondary" style="font-size:9px; padding:4px 6px;" onclick="openEditHistoryModal('${h.id}')" title="Düzenle">✏️</button>
-                                    <button class="btn btn-danger" style="font-size:9px; padding:4px 6px;" onclick="deleteHistoryEntry('${h.id}')" title="Sil">🗑️</button>
+                                    <button class="btn btn-secondary" style="font-size:10px; padding:4px 7px;" onclick="openEditHistoryModal('${h.id}')" title="Düzelt">✏️</button>
+                                    <button class="btn btn-danger" style="font-size:10px; padding:4px 7px;" onclick="deleteHistoryEntry('${h.id}')" title="Sil">🗑️</button>
                                 </div>
                             </div>
                         `;
@@ -1058,7 +1277,7 @@
                     </div>
 
                     <div class="last-record-badge">
-                        <strong style="display:block; margin-bottom:4px; color:var(--secondary);">Son Kaydedilen Setler (Son 5):</strong>
+                        <strong style="display:block; margin-bottom:4px; color:var(--secondary);">Son Kaydedilen Setler (Tarih Sıralı - Son 5):</strong>
                         ${historyHtml}
                     </div>
                 `;
@@ -1067,50 +1286,104 @@
             });
         }
 
-        // GEÇMİŞ KAYIT DÜZENLEME (YENİ ÖZELLİK)
+        // GEÇMİŞ KAYIT DÜZENLEME
         let editingHistoryId = null;
+        let editingHistoryWeighted = true;
 
         function openEditHistoryModal(historyId) {
             editingHistoryId = historyId;
             const uData = getUserData(currentUser);
             const entry = uData.history.find(h => h.id === historyId);
-            if(!entry) return;
+            if (!entry) return;
 
-            document.getElementById("editHistoryMeta").innerText = `${entry.exerciseName} - ${entry.date}`;
+            const prog = uData.programs.find(p => p.id === selectedProgramId);
+            const exDef = prog ? prog.exercises.find(e => e.name === entry.exerciseName) : null;
+            editingHistoryWeighted = exDef ? exDef.weighted : entry.sets.some(s => s.weight > 0);
+
+            document.getElementById("editHistoryMeta").innerText = `${entry.exerciseName}`;
+            const dateInput = document.getElementById("editHistoryDateInput");
+            dateInput.value = entry.date;
+            dateInput.max = getTodayStr();
+
             const container = document.getElementById("editHistorySetsContainer");
             container.innerHTML = "";
 
             entry.sets.forEach((s, sIdx) => {
-                const row = document.createElement("div");
-                row.style.cssText = "display:flex; gap:8px; align-items:center;";
-                row.innerHTML = `
-                    <span style="font-size:13px; width:40px;">Set #${sIdx+1}</span>
-                    <input type="text" class="edit-set-weight" value="${s.weight}" placeholder="kg" oninput="sanitizeDecimalInput(this)" style="flex:1;">
-                    <input type="number" class="edit-set-reps" value="${s.reps}" placeholder="tekrar" style="flex:1;">
-                `;
-                container.appendChild(row);
+                appendEditHistoryRow(sIdx + 1, s.weight, s.reps);
             });
 
             openModal("modalEditHistory");
         }
 
+        function appendEditHistoryRow(setNum, weightVal = "", repsVal = "") {
+            const container = document.getElementById("editHistorySetsContainer");
+            const row = document.createElement("div");
+            row.style.cssText = "display:flex; gap:8px; align-items:center;";
+            row.innerHTML = `
+                <span class="edit-set-num" style="font-size:13px; width:46px; font-weight:700;">Set #${setNum}</span>
+                ${editingHistoryWeighted ? `<input type="text" class="edit-set-weight" value="${weightVal}" placeholder="kg" oninput="sanitizeDecimalInput(this)" style="flex:1;">` : ''}
+                <input type="number" class="edit-set-reps" value="${repsVal}" placeholder="tekrar" style="flex:1;">
+                <button class="btn btn-danger btn-icon" style="width:26px; height:26px; font-size:11px;" onclick="removeEditHistoryRow(this)">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function addRowToEditHistory() {
+            const container = document.getElementById("editHistorySetsContainer");
+            const count = container.children.length;
+            let lastW = "";
+            let lastR = "";
+            if (count > 0) {
+                const lastRow = container.children[count - 1];
+                const wEl = lastRow.querySelector(".edit-set-weight");
+                const rEl = lastRow.querySelector(".edit-set-reps");
+                if (wEl) lastW = wEl.value;
+                if (rEl) lastR = rEl.value;
+            }
+            appendEditHistoryRow(count + 1, lastW, lastR);
+        }
+
+        function removeEditHistoryRow(btn) {
+            btn.closest("div").remove();
+            const rows = document.querySelectorAll("#editHistorySetsContainer > div");
+            rows.forEach((r, idx) => {
+                r.querySelector(".edit-set-num").innerText = `Set #${idx + 1}`;
+            });
+        }
+
         function saveEditedHistory() {
             const uData = getUserData(currentUser);
             const entry = uData.history.find(h => h.id === editingHistoryId);
-            if(!entry) return;
+            if (!entry) return;
+
+            const newDate = document.getElementById("editHistoryDateInput").value;
+            const today = getTodayStr();
+            if (!newDate) return showToast("Lütfen geçerli bir tarih seçin!", "warning");
+            if (newDate > today) return showToast("Hata: Gelecek bir tarih girilemez!", "error");
+
+            // Aynı güne aynı hareketten başka bir kayıt varsa engelle
+            const duplicateDate = uData.history.some(h => h.id !== editingHistoryId && h.exerciseName === entry.exerciseName && h.date === newDate);
+            if (duplicateDate) {
+                return showToast("Hata: Bu tarihte bu hareket için zaten başka bir kayıt mevcut!", "error");
+            }
 
             const rows = document.querySelectorAll("#editHistorySetsContainer > div");
-            const newSets = [];
+            if (rows.length === 0) return showToast("En az 1 set olmalıdır!", "warning");
 
-            for(let row of rows) {
-                const w = parseFloat(row.querySelector(".edit-set-weight").value || 0);
-                const r = parseFloat(row.querySelector(".edit-set-reps").value || 0);
-                if(r <= 0) {
-                    return showToast("Tekrar sayısı 0 veya negatif olamaz!", "error");
+            const newSets = [];
+            for (let row of rows) {
+                const wInput = row.querySelector(".edit-set-weight");
+                const rInput = row.querySelector(".edit-set-reps");
+                const w = editingHistoryWeighted ? parseFloat(wInput ? wInput.value : 0) : 0;
+                const r = parseFloat(rInput ? rInput.value : 0);
+
+                if (!r || r <= 0 || (editingHistoryWeighted && (!w || w <= 0))) {
+                    return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
                 }
                 newSets.push({ weight: w, reps: r });
             }
 
+            entry.date = newDate;
             entry.sets = newSets;
             saveUserData(currentUser, uData);
             closeModal("modalEditHistory");
@@ -1126,21 +1399,20 @@
             let defWeight = "";
             let defReps = "";
 
-            if(rowCount === 0) {
-                const exHistory = uData.history.filter(h => h.exerciseName === exName);
-                if(exHistory.length > 0) {
-                    const last = exHistory[exHistory.length - 1];
-                    if(last.sets && last.sets[0]) {
-                        defWeight = last.sets[0].weight || "";
-                        defReps = last.sets[0].reps || "";
-                    }
+            if (rowCount === 0) {
+                const sortedHistory = sortHistoryByWorkoutDateDesc(
+                    uData.history.filter(h => h.exerciseName === exName)
+                );
+                if (sortedHistory.length > 0 && sortedHistory[0].sets && sortedHistory[0].sets[0]) {
+                    defWeight = sortedHistory[0].sets[0].weight || "";
+                    defReps = sortedHistory[0].sets[0].reps || "";
                 }
             } else {
                 const lastRow = tbody.children[rowCount - 1];
                 const wInput = lastRow.querySelector('.input-weight');
                 const rInput = lastRow.querySelector('.input-reps');
-                if(wInput) defWeight = wInput.value;
-                if(rInput) defReps = rInput.value;
+                if (wInput) defWeight = wInput.value;
+                if (rInput) defReps = rInput.value;
             }
 
             const tr = document.createElement("tr");
@@ -1155,31 +1427,40 @@
 
         function saveExerciseSets(exIdx, exName, isWeighted) {
             const workoutDate = document.getElementById("workoutDateInput").value;
-            const today = new Date().toISOString().split('T')[0];
-            if(!workoutDate) return showToast("Antrenman tarihi seçiniz!", "warning");
-            if(workoutDate > today) return showToast("Gelecekteki bir tarihe antrenman kaydedilemez!", "error");
+            const today = getTodayStr();
+            if (!workoutDate) return showToast("Antrenman tarihi seçiniz!", "warning");
+            if (workoutDate > today) return showToast("Hata: Güncel tarihin ilerisinde bir tarih seçilemez!", "error");
+
+            const uData = getUserData(currentUser);
+
+            // AYNI GÜNE AYNI HAREKETTEN SADECE 1 KAYIT KURALI
+            const alreadyRecordedToday = uData.history.some(
+                h => h.exerciseName === exName && h.date === workoutDate
+            );
+            if (alreadyRecordedToday) {
+                return showToast(`Hata: ${workoutDate} tarihinde "${exName}" hareketi için zaten kayıt var! Mevcut kaydı düzenleyebilirsiniz.`, "error");
+            }
 
             const tbody = document.getElementById(`setTbody_${exIdx}`);
             const rows = tbody.querySelectorAll("tr");
             const sets = [];
 
-            for(let row of rows) {
+            for (let row of rows) {
                 const repsInput = row.querySelector('.input-reps');
                 const weightInput = row.querySelector('.input-weight');
 
                 const reps = parseFloat(repsInput ? repsInput.value : 0);
                 const weight = isWeighted ? parseFloat(weightInput ? weightInput.value : 0) : 0;
 
-                if(!reps || reps <= 0 || (isWeighted && (!weight || weight <= 0))) {
+                if (!reps || reps <= 0 || (isWeighted && (!weight || weight <= 0))) {
                     return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
                 }
 
                 sets.push({ weight, reps });
             }
 
-            if(sets.length === 0) return showToast("En az 1 set girmelisiniz!", "warning");
+            if (sets.length === 0) return showToast("En az 1 set girmelisiniz!", "warning");
 
-            const uData = getUserData(currentUser);
             uData.history.push({
                 id: "h_" + Date.now(),
                 date: workoutDate,
@@ -1193,7 +1474,7 @@
         }
 
         function deleteHistoryEntry(id) {
-            if(!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+            if (!confirm("Bu set kaydını silmek istediğinize emin misiniz?")) return;
             const uData = getUserData(currentUser);
             uData.history = uData.history.filter(h => h.id !== id);
             saveUserData(currentUser, uData);
@@ -1207,14 +1488,21 @@
             const container = document.getElementById("editProgramListContainer");
             container.innerHTML = "";
 
+            if (uData.programs.length === 0) {
+                container.innerHTML = '<p>Henüz program yok. Sağ üstteki "+ Yeni Program" butonunu kullanabilirsiniz.</p>';
+            }
+
             uData.programs.forEach((p, pIdx) => {
                 const card = document.createElement("div");
                 card.className = "card";
                 
                 let exListHtml = p.exercises.map((e, eIdx) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
-                        <span style="font-size:13px;">• ${e.name}</span>
-                        <button class="btn btn-danger btn-icon" style="width:22px; height:22px; font-size:10px;" onclick="removeExerciseFromProgramEdit(${pIdx}, ${eIdx})">✕</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                        <span style="font-size:13px;">• ${e.name} <small style="color:var(--text-muted);">(${e.weighted ? 'Ağırlıklı' : 'Vücut Ağırlığı'})</small></span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-secondary btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="openEditExerciseModalForProg('${p.id}', ${eIdx})" title="Hareketi Düzenle">✏️</button>
+                            <button class="btn btn-danger btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="removeExerciseFromProgramEdit(${pIdx}, ${eIdx})" title="Hareketi Sil">✕</button>
+                        </div>
                     </div>
                 `).join("");
 
@@ -1224,7 +1512,7 @@
                         <button class="btn btn-danger btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="deleteProgram('${p.id}')">🗑️</button>
                     </div>
                     ${exListHtml}
-                    <button class="btn btn-secondary" style="font-size:11px; padding:6px; margin-top:8px; width:100%;" onclick="openAddExerciseModalForProg('${p.id}')">+ Hareket Ekle</button>
+                    <button class="btn btn-secondary" style="font-size:11px; padding:8px; margin-top:8px; width:100%;" onclick="openAddExerciseModalForProg('${p.id}')">+ Hareket Ekle</button>
                 `;
                 container.appendChild(card);
             });
@@ -1236,15 +1524,59 @@
             uData.programs[pIdx].exercises.splice(eIdx, 1);
             saveUserData(currentUser, uData);
             openEditProgramListModal();
+            renderProgramList();
             showToast("Egzersiz çıkarıldı", "info");
+        }
+
+        function findCategoryForExercise(exName) {
+            for (const [cat, list] of Object.entries(EXERCISE_DATABASE)) {
+                if (list.includes(exName)) return cat;
+            }
+            return Object.keys(EXERCISE_DATABASE)[0];
         }
 
         function openAddExerciseModalForProg(progId) {
             selectedProgramId = progId;
+            editingExerciseIndex = null;
+            selectedAddExerciseName = "";
+
+            document.getElementById("exerciseModalTitle").innerText = "Programa Egzersiz Ekle";
+            document.getElementById("exerciseModalSaveBtn").innerText = "Ekle";
+            document.getElementById("selectedExerciseBadge").style.display = "none";
+            document.getElementById("isWeightedCheckbox").checked = true;
+
             const catSelect = document.getElementById("categorySelect");
             catSelect.innerHTML = "";
             Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
             onCategoryChange();
+            openModal("modalAddExercise");
+        }
+
+        function openEditExerciseModalForProg(progId, exIdx) {
+            selectedProgramId = progId;
+            editingExerciseIndex = exIdx;
+
+            const uData = getUserData(currentUser);
+            const prog = uData.programs.find(p => p.id === progId);
+            const currentEx = prog.exercises[exIdx];
+
+            document.getElementById("exerciseModalTitle").innerText = "Programdaki Hareketi Düzenle";
+            document.getElementById("exerciseModalSaveBtn").innerText = "Güncelle";
+
+            const catSelect = document.getElementById("categorySelect");
+            catSelect.innerHTML = "";
+            Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
+
+            const matchedCat = findCategoryForExercise(currentEx.name);
+            catSelect.value = matchedCat;
+            onCategoryChange();
+
+            selectedAddExerciseName = currentEx.name;
+            document.getElementById("selectedExerciseName").innerText = currentEx.name;
+            document.getElementById("selectedExerciseBadge").style.display = "block";
+            document.getElementById("exerciseSearchResults").style.display = "none";
+            document.getElementById("isWeightedCheckbox").checked = currentEx.weighted;
+
             openModal("modalAddExercise");
         }
 
@@ -1255,19 +1587,20 @@
 
         function saveNewProgram() {
             const name = document.getElementById("newProgramName").value.trim();
-            if(!name) return showToast("Program adı giriniz!", "warning");
+            if (!name) return showToast("Program adı giriniz!", "warning");
 
             const uData = getUserData(currentUser);
             uData.programs.push({ id: "p_" + Date.now(), name: name, exercises: [] });
             saveUserData(currentUser, uData);
 
             closeModal("modalCreateProgram");
+            openEditProgramListModal();
             renderProgramList();
             showToast("Program oluşturuldu!", "info");
         }
 
         function deleteProgram(progId) {
-            if(!confirm("Bu antrenman programını tamamen silmek istediğinizden emin misiniz?")) return;
+            if (!confirm("Bu antrenman programını tamamen silmek istediğinizden emin misiniz?")) return;
             const uData = getUserData(currentUser);
             uData.programs = uData.programs.filter(p => p.id !== progId);
             saveUserData(currentUser, uData);
@@ -1301,6 +1634,7 @@
             const cat = document.getElementById("categorySelect").value;
             const exercises = EXERCISE_DATABASE[cat] || [];
             const resultsDiv = document.getElementById("exerciseSearchResults");
+            resultsDiv.style.display = "block";
 
             const filtered = exercises.filter(e => e.toLowerCase().includes(q));
             resultsDiv.innerHTML = "";
@@ -1321,42 +1655,60 @@
             document.getElementById("exerciseSearchResults").style.display = "none";
         }
 
-        function confirmAddExerciseToProgram() {
-            if(!selectedAddExerciseName) return showToast("Lütfen bir hareket seçin!", "warning");
+        function confirmExerciseAction() {
+            if (!selectedAddExerciseName) return showToast("Lütfen bir hareket seçin!", "warning");
             const isWeighted = document.getElementById("isWeightedCheckbox").checked;
 
             const uData = getUserData(currentUser);
             const prog = uData.programs.find(p => p.id === selectedProgramId);
-            prog.exercises.push({ name: selectedAddExerciseName, weighted: isWeighted });
-            saveUserData(currentUser, uData);
+            if (!prog) return;
 
+            // AYNI HAREKETİ 2 KEZ EKLEME KONTROLÜ
+            const isDuplicate = prog.exercises.some((ex, idx) => {
+                if (editingExerciseIndex !== null && idx === editingExerciseIndex) return false;
+                return ex.name.toLowerCase() === selectedAddExerciseName.toLowerCase();
+            });
+
+            if (isDuplicate) {
+                return showToast(`Hata: "${selectedAddExerciseName}" bu programda zaten ekli! Aynı hareket 2 kez eklenemez.`, "error");
+            }
+
+            if (editingExerciseIndex !== null) {
+                prog.exercises[editingExerciseIndex] = { name: selectedAddExerciseName, weighted: isWeighted };
+                showToast("Hareket güncellendi!", "info");
+            } else {
+                prog.exercises.push({ name: selectedAddExerciseName, weighted: isWeighted });
+                showToast("Hareket eklendi!", "info");
+            }
+
+            saveUserData(currentUser, uData);
             closeModal("modalAddExercise");
             openEditProgramListModal();
-            showToast("Hareket eklendi!", "info");
+            renderProgramList();
         }
 
         // HEALTH MODULE
         function saveHealthData() {
             const date = document.getElementById("healthDateInput").value;
-            const today = new Date().toISOString().split('T')[0];
-            if(!date) return showToast("Tarih seçiniz!", "warning");
-            if(date > today) return showToast("Gelecekteki bir tarihe ölçüm girilemez!", "error");
+            const today = getTodayStr();
+            if (!date) return showToast("Tarih seçiniz!", "warning");
+            if (date > today) return showToast("Hata: Güncel tarihin ilerisinde bir tarih seçilemez!", "error");
 
             const fields = ["weight", "fat", "waist", "hip", "shoulder", "arm", "thigh", "neck"];
             const entry = { id: "h_" + Date.now(), date: date, notes: document.getElementById("h_notes").value };
             let hasValue = false;
 
-            for(let f of fields) {
+            for (let f of fields) {
                 const val = document.getElementById(`h_${f}`).value;
-                if(val !== "") {
+                if (val !== "") {
                     const num = parseFloat(val);
-                    if(num <= 0) return showToast("Sıfır veya negatif değer girilemez!", "error");
+                    if (num <= 0) return showToast("Sıfır veya negatif değer girilemez!", "error");
                     entry[f] = num;
                     hasValue = true;
                 }
             }
 
-            if(!hasValue) return showToast("En az bir ölçüm alanı doldurunuz!", "warning");
+            if (!hasValue) return showToast("En az bir ölçüm alanı doldurunuz!", "warning");
 
             const uData = getUserData(currentUser);
             uData.health.push(entry);
@@ -1372,8 +1724,8 @@
             const list = document.getElementById("healthHistoryList");
             list.innerHTML = "";
 
-            const sorted = [...uData.health].reverse();
-            if(sorted.length === 0) list.innerHTML = "<p>Geçmiş kayıt bulunamadı.</p>";
+            const sorted = sortHistoryByWorkoutDateDesc(uData.health);
+            if (sorted.length === 0) list.innerHTML = "<p>Geçmiş kayıt bulunamadı.</p>";
 
             sorted.forEach(h => {
                 const card = document.createElement("div");
@@ -1401,12 +1753,12 @@
         function editHealthEntry(id) {
             const uData = getUserData(currentUser);
             const entry = uData.health.find(h => h.id === id);
-            if(!entry) return;
+            if (!entry) return;
 
             const newWeight = prompt("Kilo (kg):", entry.weight || "");
-            if(newWeight !== null && newWeight !== "") {
+            if (newWeight !== null && newWeight !== "") {
                 const num = parseFloat(newWeight);
-                if(num <= 0) return showToast("Hata: 0 veya eksi değer girilemez!", "error");
+                if (num <= 0) return showToast("Hata: 0 veya eksi değer girilemez!", "error");
                 entry.weight = num;
             }
 
@@ -1416,7 +1768,7 @@
         }
 
         function deleteHealthEntry(id) {
-            if(!confirm("Bu ölçüm kaydını silmek istediğinizden emin misiniz?")) return;
+            if (!confirm("Bu ölçüm kaydını silmek istediğinizden emin misiniz?")) return;
             const uData = getUserData(currentUser);
             uData.health = uData.health.filter(h => h.id !== id);
             saveUserData(currentUser, uData);
@@ -1430,7 +1782,7 @@
             
             const healthContainer = document.getElementById("healthReportContainer");
             healthContainer.innerHTML = "";
-            [...uData.health].reverse().forEach(h => {
+            sortHistoryByWorkoutDateDesc(uData.health).forEach(h => {
                 healthContainer.innerHTML += `
                     <div style="padding:8px 0; border-bottom:1px solid var(--border-color); font-size:13px;">
                         <strong>${h.date}:</strong> ${h.weight ? h.weight + 'kg' : ''} ${h.waist ? '| Bel: ' + h.waist + 'cm' : ''} ${h.arm ? '| Kol: ' + h.arm + 'cm' : ''}
@@ -1449,10 +1801,12 @@
             const container = document.getElementById("exerciseReportContainer");
             container.innerHTML = "";
 
-            if(!selectedEx) return;
+            if (!selectedEx) return;
 
             const uData = getUserData(currentUser);
-            const filtered = uData.history.filter(h => h.exerciseName === selectedEx).reverse();
+            const filtered = sortHistoryByWorkoutDateDesc(
+                uData.history.filter(h => h.exerciseName === selectedEx)
+            );
 
             filtered.forEach(h => {
                 const setStr = h.sets.map((s, i) => `#${i+1}: ${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}tekrar`).join('<br>');
