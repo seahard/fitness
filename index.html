@@ -7,7 +7,6 @@
     
     <meta name="theme-color" content="#0a0f1d">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BodyRecords">
 
@@ -1423,7 +1422,7 @@
                     historyHtml = "<span>Bu programda bu hareket için geçmiş kayıt bulunamadı.</span>";
                 }
 
-                const safeExName = ex.name.replace(/'/g, "\'");
+                const safeExName = ex.name.replace(/'/g, "\\'");
 
                 card.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
