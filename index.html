@@ -1306,24 +1306,21 @@
             showToast("Profil güncellendi!", "info");
         }
 
-        // HAREKET GÖRSELİ GÖSTERME (GITHUB REPO İÇERİSİNDEN [Hareket Adı].png)
-function openExerciseImageModal(exName) {
+      function openExerciseImageModal(exName) {
     if (!exName) return;
     document.getElementById("exerciseImageModalTitle").innerText = exName;
     const container = document.getElementById("exerciseImageContainer");
     container.innerHTML = "";
 
     const img = document.createElement("img");
-
-    // GitHub Pages veya kök dizin için doğru URL yapısı
     const encodedName = encodeURIComponent(exName);
-    img.src = `${encodedName}.png`;
-
+    img.src = encodedName + ".png";
     img.alt = exName;
+
     img.onerror = function() {
-        // Resim bulunamazsa kutuyu temizle veya bilgi göster
-        container.innerHTML = `<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Bu hareket için henüz görsel eklenmemiş.<br><small>${exName}.png</small></p>`;
+        container.innerHTML = "";
     };
+
     container.appendChild(img);
     openModal("modalExerciseImage");
 }
