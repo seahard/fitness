@@ -6,6 +6,7 @@
     <title>Fitness & Body Records</title>
     
     <meta name="theme-color" content="#0a0f1d">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BodyRecords">
@@ -34,7 +35,7 @@
             window.fbGetDoc = getDoc;
             window.fbCollection = collection;
             window.fbGetDocs = getDocs;
-            wifunction openExerciseImageModal(exName)ndow.fbReady = true;
+            window.fbReady = true;
             if (typeof window.onFirebaseInit === 'function') {
                 window.onFirebaseInit();
             }
@@ -1306,24 +1307,23 @@
             showToast("Profil güncellendi!", "info");
         }
 
-      function openExerciseImageModal(exName) {
-    if (!exName) return;
-    document.getElementById("exerciseImageModalTitle").innerText = exName;
-    const container = document.getElementById("exerciseImageContainer");
-    container.innerHTML = "";
+        // HAREKET GÖRSELİ GÖSTERME (GITHUB REPO İÇERİSİNDEN [Hareket Adı].png)
+        function openExerciseImageModal(exName) {
+            if (!exName) return;
+            document.getElementById("exerciseImageModalTitle").innerText = exName;
+            const container = document.getElementById("exerciseImageContainer");
+            container.innerHTML = "";
 
-    const img = document.createElement("img");
-    const encodedName = encodeURIComponent(exName);
-    img.src = encodedName + ".png";
-    img.alt = exName;
-
-    img.onerror = function() {
-        container.innerHTML = "";
-    };
-
-    container.appendChild(img);
-    openModal("modalExerciseImage");
-}
+            const img = document.createElement("img");
+            const encodedName = encodeURIComponent(exName);
+            img.src = encodedName + ".png";
+            img.alt = exName;
+            img.onerror = function() {
+                container.innerHTML = "";
+            };
+            container.appendChild(img);
+            openModal("modalExerciseImage");
+        }
 
         function openSelectedExerciseImageModal() {
             if (!selectedAddExerciseName) return;
@@ -1339,7 +1339,6 @@
             if (h.programName) {
                 return h.programName === prog.name;
             }
-            // Eski kayıtlarda programId yoksa sadece kullanıcının ilk programına eşle (yeni açılan programlara sızmasını önler)
             return uData.programs.length > 0 && uData.programs[0].id === prog.id;
         }
 
@@ -1402,7 +1401,6 @@
                 const card = document.createElement("div");
                 card.className = "card";
 
-                // Sadece bu kullanıcı ve bu programa ait geçmiş kayıtları getir
                 const sortedHistory = sortHistoryByWorkoutDateDesc(
                     uData.history.filter(h => h.exerciseName === ex.name && isRecordForProgram(h, prog, uData))
                 ).slice(0, 5);
@@ -1425,7 +1423,7 @@
                     historyHtml = "<span>Bu programda bu hareket için geçmiş kayıt bulunamadı.</span>";
                 }
 
-                const safeExName = ex.name.replace(/'/g, "\\'");
+                const safeExName = ex.name.replace(/'/g, "\'");
 
                 card.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
@@ -1536,7 +1534,6 @@
             if (!newDate) return showToast("Lütfen geçerli bir tarih seçin!", "warning");
             if (newDate > today) return showToast("Hata: Gelecek bir tarih girilemez!", "error");
 
-            // Aynı programda aynı güne aynı hareketten başka bir kayıt varsa engelle
             const duplicateDate = uData.history.some(h => 
                 h.id !== editingHistoryId && 
                 h.exerciseName === entry.exerciseName && 
@@ -1588,7 +1585,6 @@
             let defReps = "";
 
             if (rowCount === 0 && prog) {
-                // Yalnızca seçili programa ait son kaydı getirir
                 const sortedHistory = sortHistoryByWorkoutDateDesc(
                     uData.history.filter(h => h.exerciseName === exName && isRecordForProgram(h, prog, uData))
                 );
@@ -1624,7 +1620,6 @@
             const prog = uData.programs.find(p => p.id === selectedProgramId);
             if (!prog) return;
 
-            // AYNI PROGRAMDA AYNI GÜNE AYNI HAREKETTEN SADECE 1 KAYIT KURALI
             const alreadyRecordedToday = uData.history.some(
                 h => h.exerciseName === exName && h.date === workoutDate && isRecordForProgram(h, prog, uData)
             );
@@ -1652,7 +1647,6 @@
 
             if (sets.length === 0) return showToast("En az 1 set girmelisiniz!", "warning");
 
-            // Kullanıcı adı ve program bilgisi ile birlikte kaydet
             uData.history.push({
                 id: "h_" + Date.now(),
                 userName: currentUser,
@@ -1667,7 +1661,6 @@
             showToast(`${exName} (${prog.name}) setleri kaydedildi!`, "info");
             renderWorkoutExercises();
 
-            // Anında Firebase'e senkronize et (çevrimdışı ise yerelde kalır, bağlantı gelince yazar)
             await syncToCloud(false);
         }
 
@@ -1948,7 +1941,6 @@
 
             if (!hasValue) return showToast("En az bir ölçüm alanı doldurunuz!", "warning");
 
-            // Aynı güne daha önce kayıt girilmişse onay iste ve üzerine yaz (çift kayıt oluşturma)
             if (existingIndex !== -1) {
                 const confirmed = confirm("Önceki Kayıtlarda Değişiklik Yaptınız, Değişiklikleri Kaydetmek İstediğinize Emin misiniz?");
                 if (!confirmed) return;
@@ -1961,7 +1953,6 @@
             loadHealthFormForDate(date);
             showToast(existingIndex !== -1 ? "Önceki ölçüm kaydı güncellendi!" : "Ölçüm kaydedildi!", "info");
 
-            // Firebase'e anında yaz (bağlantı yoksa yerelde bekler, gelince yazar)
             await syncToCloud(false);
         }
 
@@ -2083,7 +2074,7 @@
 
                     const weekRecs = validRecords.filter(r => r.dateObj >= wStart && r.dateObj <= wEnd);
                     if (weekRecs.length > 0) {
-                        const avg = weekRecs.reduce((sum, r) => sum + r.value, 0) / weekRecs.length;
+                        const avg = weekRecs.reduce((sum, r) => sum + r.val, 0) / weekRecs.length;
                         points.push({
                             label: `${formatShortTRDate(wStart)}-${formatShortTRDate(wEnd)}`,
                             value: Number(avg.toFixed(1))
@@ -2100,7 +2091,7 @@
 
                     const monthRecs = validRecords.filter(r => r.dateObj.getFullYear() === tYear && r.dateObj.getMonth() === tMonth);
                     if (monthRecs.length > 0) {
-                        const avg = monthRecs.reduce((sum, r) => sum + r.value, 0) / monthRecs.length;
+                        const avg = monthRecs.reduce((sum, r) => sum + r.val, 0) / monthRecs.length;
                         points.push({
                             label: `${monthNames[tMonth]} '${String(tYear).slice(-2)}`,
                             value: Number(avg.toFixed(1))
@@ -2154,7 +2145,6 @@
                 return { x, y, label: p.label, value: p.value };
             });
 
-            // Yatay kılavuz çizgileri
             let gridLines = "";
             for (let g = 0; g <= 3; g++) {
                 const gy = padTop + (g / 3) * plotH;
@@ -2220,7 +2210,6 @@
             const exSelect = document.getElementById("reportExerciseSelect");
             exSelect.innerHTML = '<option value="">-- Program & Egzersiz Seçin --</option>';
 
-            // Program bazlı benzersiz hareket listesi
             const seenKeys = new Set();
             uData.history.forEach(h => {
                 const progObj = uData.programs.find(p => p.id === h.programId || p.name === h.programName);
