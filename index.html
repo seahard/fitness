@@ -4,13 +4,11 @@
 <meta charset="UTF-8">
 <title>Fitness Exercise Manager</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <!-- ==== Existing CSS from the original project (unchanged) ==== -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
 <style>
 /* ----- Custom styles for the UI tweaks ----- */
-
 /* Keep menu icons left‑aligned, keep text centred */
 .sidebar {
     width: 250px;
@@ -39,7 +37,6 @@
     flex: 1;
     text-align: center;       /* label stays centred */
 }
-
 /* Form layout */
 .main-content {
     margin-left: 260px;
@@ -53,12 +50,10 @@
 .select-group select {
     min-width: 120px;
 }
-
 /* Keep the search field value when group changes */
 input#search {
     width: 100%;
 }
-
 /* Simple card style for exercise list */
 .exercise-card {
     border: 1px solid #e0e0e0;
@@ -70,7 +65,6 @@ input#search {
 </style>
 </head>
 <body>
-
 <!-- ==== Sidebar (unchanged except icon alignment) ==== -->
 <div class="sidebar">
     <ul>
@@ -80,15 +74,12 @@ input#search {
         <!-- other menu items … -->
     </ul>
 </div>
-
 <!-- ==== Main Content ==== -->
 <div class="main-content">
     <h2>Egzersiz Ekle</h2>
-
     <div class="select-group">
         <!-- Search / Select field -->
         <input type="text" id="search" placeholder="Egzersiz Ara / Seç" autocomplete="off">
-
         <!-- Muscle‑group selector – “Hepsi” default -->
         <select id="muscle-group">
             <option value="all" selected>Hepsi</option>
@@ -106,13 +97,10 @@ input#search {
             <option value="cardio">Kardiyo (Cardio)</option>
         </select>
     </div>
-
     <hr>
-
     <!-- Exercise list will be rendered here -->
     <div id="exercise-list"></div>
 </div>
-
 <!-- ==== Firebase & GitHub config (kept exactly as in the original file) ==== -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -129,7 +117,6 @@ input#search {
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-
   // ---- GitHub connection (unchanged) ----
   const github = {
     owner: "seahard",
@@ -138,7 +125,6 @@ input#search {
     token: "YOUR_GITHUB_TOKEN"
   };
 </script>
-
 <!-- ==== Exercise data (the master list you approved) ==== -->
 <script>
   const EXERCISES = [
@@ -169,7 +155,6 @@ input#search {
     { name: "Smith Machine Bench Press", group: "chest" },
     { name: "Cable Chest Press (Standing)", group: "chest" },
     { name: "Dumbbell Pullover", group: "chest" },
-
     // Back
     { name: "Pull‑Up (Barfiks)", group: "back" },
     { name: "Chin‑Up", group: "back" },
@@ -192,7 +177,6 @@ input#search {
     { name: "Deadlift (Conventional)", group: "back" },
     { name: "Rack Pull", group: "back" },
     { name: "Hyperextension", group: "back" },
-
     // Shoulders
     { name: "Barbell Overhead Press (Military Press)", group: "shoulders" },
     { name: "Push Press", group: "shoulders" },
@@ -214,7 +198,6 @@ input#search {
     { name: "Dumbbell Shrug", group: "shoulders" },
     { name: "Upright Row", group: "shoulders" },
     { name: "Landmine Press (Shoulder)", group: "shoulders" },
-
     // Biceps
     { name: "Barbell Biceps Curl", group: "biceps" },
     { name: "EZ‑Bar Curl", group: "biceps" },
@@ -231,7 +214,6 @@ input#search {
     { name: "High Cable (Cali) Curl", group: "biceps" },
     { name: "Zottman Curl", group: "biceps" },
     { name: "Incline Hammer Curl", group: "biceps" },
-
     // Triceps
     { name: "Cable Triceps Pushdown (Straight Bar)", group: "triceps" },
     { name: "Cable Rope Pushdown", group: "triceps" },
@@ -246,7 +228,6 @@ input#search {
     { name: "Cable Kickback", group: "triceps" },
     { name: "Tate Press", group: "triceps" },
     { name: "Close‑Grip Pushdown (Rope)", group: "triceps" },
-
     // Quads
     { name: "Barbell Back Squat", group: "quads" },
     { name: "Front Squat", group: "quads" },
@@ -262,7 +243,6 @@ input#search {
     { name: "Sissy Squat", group: "quads" },
     { name: "Sled Push", group: "quads" },
     { name: "Wall Sit", group: "quads" },
-
     // Hamstrings
     { name: "Conventional Deadlift", group: "hamstrings" },
     { name: "Sumo Deadlift", group: "hamstrings" },
@@ -275,7 +255,6 @@ input#search {
     { name: "Good Morning", group: "hamstrings" },
     { name: "Nordic Hamstring Curl", group: "hamstrings" },
     { name: "Swiss Ball Hamstring Curl", group: "hamstrings" },
-
     // Glutes
     { name: "Barbell Hip Thrust", group: "glutes" },
     { name: "Machine Hip Thrust", group: "glutes" },
@@ -288,7 +267,6 @@ input#search {
     { name: "Hyper‑Extension (Glute‑Focused)", group: "glutes" },
     { name: "Cable Pull‑Through", group: "glutes" },
     { name: "Band Hip Thrust", group: "glutes" },
-
     // Abs
     { name: "Crunch", group: "abs" },
     { name: "Cable Crunch", group: "abs" },
@@ -308,7 +286,6 @@ input#search {
     { name: "V‑Sit Up", group: "abs" },
     { name: "Bicycle Crunch", group: "abs" },
     { name: "Hanging Windshield Wipers", group: "abs" },
-
     // Forearms & Wrists
     { name: "Barbell Wrist Curl", group: "forearms" },
     { name: "Reverse Barbell Wrist Curl", group: "forearms" },
@@ -318,7 +295,6 @@ input#search {
     { name: "Dead Hang (Barfiks Barında Asılı Kalma)", group: "forearms" },
     { name: "Reverse Curl (Barbell)", group: "forearms" },
     { name: "Wrist Roller", group: "forearms" },
-
     // Calves
     { name: "Standing Calf Raise", group: "calves" },
     { name: "Seated Calf Raise", group: "calves" },
@@ -326,7 +302,6 @@ input#search {
     { name: "Donkey Calf Raise", group: "calves" },
     { name: "Single‑Leg Calf Raise", group: "calves" },
     { name: "Box Calf Raise", group: "calves" },
-
     // Cardio
     { name: "Treadmill Walk (Normal Yürüyüş)", group: "cardio" },
     { name: "Incline Treadmill Walk (Rampalı/Eğimli Yürüyüş)", group: "cardio" },
@@ -344,25 +319,21 @@ input#search {
     { name: "Battle Ropes", group: "cardio" }
   ];
 </script>
-
 <!-- ==== UI Logic ==== -->
 <script>
   // Utility: render list of exercises
   function renderList(filterText = "", group = "all") {
     const listContainer = document.getElementById('exercise-list');
     listContainer.innerHTML = '';
-
     const filtered = EXERCISES.filter(item => {
       const matchesGroup = group === 'all' || item.group === group;
       const matchesText = item.name.toLowerCase().includes(filterText.toLowerCase());
       return matchesGroup && matchesText;
     });
-
     if (filtered.length === 0) {
       listContainer.innerHTML = '<p>Hiç hareket bulunamadı.</p>';
       return;
     }
-
     filtered.forEach(item => {
       const div = document.createElement('div');
       div.className = 'exercise-card';
@@ -372,7 +343,6 @@ input#search {
       listContainer.appendChild(div);
     });
   }
-
   // Add selected exercise to Firebase (you can adapt the data structure)
   function addExercise(ex) {
     const newKey = db.ref('exercises').push().key;
@@ -387,24 +357,19 @@ input#search {
       alert('Ekleme sırasında bir hata oluştu.');
     });
   }
-
   // ----- Event listeners -----
   // Keep search text intact when group changes
   const searchInput = document.getElementById('search');
   const groupSelect = document.getElementById('muscle-group');
-
   searchInput.addEventListener('input', () => {
     renderList(searchInput.value, groupSelect.value);
   });
-
   groupSelect.addEventListener('change', () => {
     // Do NOT clear the search box – just re‑render with the same text
     renderList(searchInput.value, groupSelect.value);
   });
-
   // Initial render – “Hepsi” is already selected
   renderList();
 </script>
-
 </body>
 </html>
