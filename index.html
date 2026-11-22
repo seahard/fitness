@@ -1,2256 +1,2500 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fitness & Body Records</title>
-    
-    <meta name="theme-color" content="#0a0f1d">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BodyRecords">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fitness & Body Records</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <!-- Firebase SDK (Compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC6IVVpFoZuawKLHVT8R3wXhp3XUnTqaFE",
-            authDomain: "fitness-8ecf7.firebaseapp.com",
-            databaseURL: "https://console.firebase.google.com/project/fitness-8ecf7/firestore",
-            projectId: "fitness-8ecf7",
-            storageBucket: "fitness.appspot.com",
-            messagingSenderId: "1088852669752",
-            appId: "1:1088852669752:web:00b29e784caa74003f7dcd"
-        };
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #131926;
+      --bg-card: #1a2234;
+      --bg-input: #0f1522;
+      --border-color: #29354d;
+      --accent-blue: #3b82f6;
+      --accent-blue-hover: #2563eb;
+      --accent-green: #10b981;
+      --accent-green-hover: #059669;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
 
-        window.fbReady = false;
-        try {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            window.fbDb = db;
-            window.fbDoc = doc;
-            window.fbSetDoc = setDoc;
-            window.fbGetDoc = getDoc;
-            window.fbCollection = collection;
-            window.fbGetDocs = getDocs;
-            window.fbReady = true;
-            if (typeof window.onFirebaseInit === 'function') {
-                window.onFirebaseInit();
-            }
-        } catch (err) {
-            console.error("Firebase init error:", err);
-        }
-    </script>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    <style>
-        :root {
-            --bg-main: #0a0f1d;
-            --bg-card: #131b2e;
-            --bg-input: #1c273e;
-            --primary: #00ff88;
-            --primary-glow: rgba(0, 255, 136, 0.25);
-            --secondary: #00d8ff;
-            --danger: #ff4757;
-            --warning: #ffa502;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --radius-main: 16px;
-            --radius-sm: 8px;
-        }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      line-height: 1.5;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+    .app-container {
+      width: 100%;
+      max-width: 540px;
+      min-height: 100vh;
+      background-color: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.7);
+    }
 
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, #162036 0%, #0f172a 100%);
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
 
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            padding: 16px;
-            padding-bottom: 40px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .top-sync-bar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
 
-        .sync-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.25s ease;
-        }
+    .brand-title h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
 
-        .sync-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background-color: var(--primary);
-            box-shadow: 0 0 8px var(--primary);
-            transition: all 0.25s ease;
-        }
+    .brand-title span {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: block;
+    }
 
-        .sync-indicator.unsynced .sync-dot {
-            background-color: var(--danger);
-            box-shadow: 0 0 8px var(--danger);
-        }
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      background-color: rgba(16, 185, 129, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      transition: all 0.25s ease;
+    }
 
-        .sync-indicator.syncing .sync-dot {
-            background-color: var(--warning);
-            box-shadow: 0 0 8px var(--warning);
-        }
+    .sync-badge.pending {
+      background-color: rgba(245, 158, 11, 0.14);
+      color: var(--accent-amber);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
 
-        .view {
-            display: none;
-            flex-direction: column;
-            gap: 16px;
-            animation: fadeIn 0.25s ease-in-out;
-        }
+    .sync-badge.syncing {
+      background-color: rgba(59, 130, 246, 0.14);
+      color: var(--accent-blue);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
 
-        .view.active { display: flex; }
+    .sync-badge.error {
+      background-color: rgba(239, 68, 68, 0.14);
+      color: var(--accent-red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
 
-        h1, h2, h3 { font-weight: 700; color: var(--text-main); }
-        p { color: var(--text-muted); font-size: 14px; }
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 18px;
+      padding-bottom: 40px;
+    }
 
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-main);
-            padding: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            position: relative;
-        }
+    .screen {
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
 
-        label {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            display: block;
-            letter-spacing: 0.5px;
-        }
+    .screen.active {
+      display: block;
+    }
 
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--text-main);
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px var(--primary-glow);
-        }
+    /* Cards & Surfaces */
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-card);
+    }
 
-        .btn {
-            background: var(--primary);
-            color: #000;
-            font-weight: 700;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 14px;
-            font-size: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
 
-        .btn:active { transform: scale(0.98); }
-        .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); }
-        .btn-danger { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); }
-        .btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 16px; }
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 14px;
+    }
 
-        .btn-info-q {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(0, 216, 255, 0.15);
-            color: var(--secondary);
-            border: 1px solid rgba(0, 216, 255, 0.45);
-            font-size: 13px;
-            font-weight: 800;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: all 0.2s;
-        }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
 
-        .btn-info-q:hover, .btn-info-q:active {
-            background: var(--secondary);
-            color: #000;
-        }
+    .form-control {
+      width: 100%;
+      padding: 11px 13px;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
 
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 8px;
-        }
+    .form-control:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    }
 
-        .user-profile-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
+    select.form-control {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 34px;
+    }
 
-        .avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--primary);
-            box-shadow: 0 0 10px var(--primary-glow);
-        }
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
 
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            width: 90%;
-            max-width: 400px;
-            pointer-events: none;
-        }
+    .btn:active {
+      transform: scale(0.98);
+    }
 
-        .toast {
-            background: rgba(19, 27, 46, 0.95);
-            border-left: 4px solid var(--primary);
-            color: var(--text-main);
-            padding: 14px 16px;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
-            margin-bottom: 8px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: slideDown 0.3s ease;
-            pointer-events: auto;
-        }
+    .btn-primary {
+      background-color: var(--accent-blue);
+      color: #fff;
+    }
+    .btn-primary:hover { background-color: var(--accent-blue-hover); }
 
-        .toast.error { border-left-color: var(--danger); }
-        .toast.warning { border-left-color: var(--warning); }
+    .btn-success {
+      background-color: var(--accent-green);
+      color: #fff;
+    }
+    .btn-success:hover { background-color: var(--accent-green-hover); }
 
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+    .btn-danger {
+      background-color: rgba(239, 68, 68, 0.16);
+      color: var(--accent-red);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .btn-danger:hover {
+      background-color: var(--accent-red);
+      color: #fff;
+    }
 
-        .search-results {
-            max-height: 200px;
-            overflow-y: auto;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            margin-top: 4px;
-            display: none;
-        }
+    .btn-secondary {
+      background-color: #243047;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover { background-color: #2d3c59; }
 
-        .search-item {
-            padding: 10px 14px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            font-size: 14px;
-        }
+    .btn-sm {
+      padding: 7px 11px;
+      font-size: 12px;
+      width: auto;
+      border-radius: var(--radius-sm);
+    }
 
-        .search-item:hover { background: rgba(0, 255, 136, 0.1); color: var(--primary); }
+    .btn-icon-only {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
 
-        .set-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0;
-        }
+    /* User Profile Banner */
+    .user-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #1e293b 0%, #172033 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
 
-        .set-table th, .set-table td {
-            padding: 8px;
-            text-align: center;
-            font-size: 13px;
-        }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-        .set-table th { color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
-        .set-table input { text-align: center; padding: 6px; font-size: 14px; }
+    .avatar-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #fff;
+      overflow: hidden;
+      border: 2px solid var(--accent-blue);
+      flex-shrink: 0;
+    }
 
-        .last-record-badge {
-            background: rgba(0, 216, 255, 0.1);
-            color: var(--secondary);
-            border: 1px solid rgba(0, 216, 255, 0.2);
-            padding: 10px;
-            border-radius: var(--radius-sm);
-            font-size: 12px;
-            margin-top: 12px;
-        }
+    .avatar-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-        .history-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px dashed rgba(255,255,255,0.08);
-            gap: 6px;
-        }
+    /* Dashboard Menu Buttons (Simgeler Sola Hizalı, Yazılar Ortalı) */
+    .dashboard-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-        .modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
+    .menu-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 58px;
+      padding: 14px 48px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      text-align: center;
+    }
 
-        .modal-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-main);
-            width: 100%;
-            max-width: 440px;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+    .menu-btn:hover {
+      border-color: var(--accent-blue);
+      background-color: #202a40;
+      transform: translateY(-1px);
+    }
 
-        .exercise-image-box {
-            width: 100%;
-            min-height: 200px;
-            background: var(--bg-input);
-            border: 1px dashed var(--border-color);
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            padding: 8px;
-        }
+    .menu-btn:active {
+      transform: scale(0.99);
+    }
 
-        .exercise-image-box img {
-            max-width: 100%;
-            max-height: 320px;
-            border-radius: 6px;
-            object-fit: contain;
-        }
+    .menu-btn-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 22px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+    }
 
-        .chart-wrapper {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            padding: 12px 8px;
-            margin-top: 8px;
-            overflow-x: auto;
-        }
+    .menu-btn-text {
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
 
-        .footer-credit {
-            text-align: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 24px;
-            opacity: 0.6;
-            letter-spacing: 0.5px;
-        }
-    </style>
+    /* Top Nav Bar inside Sub-screens */
+    .sub-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sub-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    /* Searchable Exercise Dropdown */
+    .search-select-wrapper {
+      position: relative;
+    }
+
+    .search-input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-container input {
+      padding-right: 36px;
+    }
+
+    .clear-search-btn {
+      position: absolute;
+      right: 10px;
+      background: rgba(148, 163, 184, 0.15);
+      border: none;
+      color: var(--text-secondary);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clear-search-btn.visible {
+      display: flex;
+    }
+
+    .exercise-dropdown-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 240px;
+      overflow-y: auto;
+      background-color: #161f33;
+      border: 1px solid var(--accent-blue);
+      border-radius: var(--radius-md);
+      z-index: 40;
+      display: none;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+    }
+
+    .exercise-dropdown-list.open {
+      display: block;
+    }
+
+    .exercise-option {
+      padding: 10px 13px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(41, 53, 77, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .exercise-option:last-child {
+      border-bottom: none;
+    }
+
+    .exercise-option:hover,
+    .exercise-option.selected {
+      background-color: rgba(59, 130, 246, 0.22);
+      color: #fff;
+    }
+
+    .exercise-option-group {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background-color: rgba(148, 163, 184, 0.14);
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Program & Exercise List Items */
+    .list-item {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .list-item-info h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .list-item-info p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      background-color: rgba(59, 130, 246, 0.16);
+      color: var(--accent-blue);
+    }
+
+    .badge-bw {
+      background-color: rgba(16, 185, 129, 0.16);
+      color: var(--accent-green);
+    }
+
+    /* Workout Set Rows */
+    .set-row {
+      display: grid;
+      grid-template-columns: 36px 1fr 1fr 34px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .set-row.bodyweight-mode {
+      grid-template-columns: 36px 1fr 34px;
+    }
+
+    .set-number {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-align: center;
+      background-color: var(--bg-input);
+      padding: 9px 0;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Grid Helpers */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background-color: var(--bg-input);
+      padding: 5px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    /* Chart Container */
+    .chart-box {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 100;
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 460px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background-color: #1e293b;
+      color: #fff;
+      padding: 11px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--accent-blue);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      max-width: 92vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Checkbox */
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent-blue);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .history-card {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+  </style>
 </head>
 <body>
-
-    <div class="toast-container" id="toastContainer"></div>
-
-    <div class="app-container">
-
-        <!-- TÜM SAYFALARDA GÖRÜNEN SENKRONİZASYON DURUM SİMGESİ -->
-        <div class="top-sync-bar">
-            <div id="globalSyncIndicator" class="sync-indicator" onclick="manualSyncClick()" title="Bulut Senkronizasyon Durumu">
-                <span class="sync-dot"></span>
-                <span id="globalSyncLabel">Senkronize</span>
-            </div>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-title">
+        <div class="brand-logo">F</div>
+        <div>
+          <h1>Fitness & Body Records</h1>
+          <span id="headerSubtitle">Kişisel Antrenman & Gelişim Takibi</span>
         </div>
+      </div>
+      <div id="syncBadge" class="sync-badge" title="Firebase Bulut Senkronizasyon Durumu">
+        <span class="sync-dot"></span>
+        <span id="syncText">Senkronize</span>
+      </div>
+    </header>
 
-        <!-- SAYFA 1: GİRİŞ EKRANI -->
-        <div id="viewPage1" class="view active">
-            <div style="text-align: center; margin: 12px 0 10px 0;">
-                <h1 style="font-size: 26px; color: var(--primary); letter-spacing: -0.5px;">Fitness & Body Records</h1>
-                <p style="margin-top: 6px; font-weight: 500;">Tahmin etmeyi bırak, gelişimini ölç.</p>
-            </div>
+    <main class="main-content">
+      <!-- ==================== SCREEN 1: AUTH / LOGIN ==================== -->
+      <section id="screen-auth" class="screen active">
+        <div class="card">
+          <div class="card-title">Sporcu Girişi</div>
+          <div class="form-group">
+            <label class="form-label" for="loginUsername">Kullanıcı Adı</label>
+            <input type="text" id="loginUsername" class="form-control" placeholder="Örn: Yavuz" value="Yavuz" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Şifre</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Şifrenizi girin" />
+          </div>
+          <button class="btn btn-primary" onclick="handleLogin()">Giriş Yap</button>
 
-            <div class="card" style="margin-top: 6px;">
-                <h2 style="font-size: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Kullanıcı Girişi</h2>
-                
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <label>Sporcu Seçiniz</label>
-                        <select id="loginUserSelect"></select>
-                    </div>
-
-                    <div>
-                        <label>Şifre</label>
-                        <input type="password" id="loginPassword" placeholder="••••">
-                    </div>
-
-                    <button class="btn" onclick="handleLogin()">Giriş Yap ⚡</button>
-                    
-                    <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-                        <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 12px;" onclick="openForgotPasswordModal()">Şifremi Unuttum</button>
-                        <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 12px;" onclick="showRegisterModal()">Yeni Sporcu Ekle</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="footer-credit">Designed & Developed by Yavuz Deniz</div>
+          <div style="display:flex; justify-content:space-between; margin-top:14px; gap:8px;">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showScreen('screen-register')">Yeni Kayıt</button>
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showScreen('screen-forgot')">Şifremi Unuttum</button>
+          </div>
         </div>
+      </section>
 
-        <!-- SAYFA 2: ANA DASHBOARD -->
-        <div id="viewPage2" class="view">
-            <div class="app-header">
-                <div class="user-profile-badge" onclick="openProfileUpdateModal()">
-                    <img id="userAvatarHeader" src="" class="avatar" alt="Avatar">
-                    <div>
-                        <h3 id="userNameHeader" style="font-size: 16px;">-</h3>
-                        <p style="font-size: 11px; color: var(--primary);">Profili Düzenle</p>
-                    </div>
-                </div>
-                <button class="btn btn-secondary" style="font-size: 11px; padding: 8px 10px;" onclick="syncToCloud(true)">Şimdi Senkronize Et</button>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="btn" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewWorkoutMenu')">🏋️‍♂️ Antrenman Programı</button>
-                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewHealthInput')">📏 Sağlık Verisi Gir</button>
-                <button class="btn btn-secondary" style="padding: 18px; font-size: 16px;" onclick="navigateTo('viewReports')">📊 Antrenman ve Sağlık Raporu</button>
-                <button class="btn btn-danger" style="padding: 14px; margin-top: 20px;" onclick="handleLogout()">Kullanıcı Çıkışı Yap</button>
-            </div>
+      <!-- ==================== SCREEN 2: REGISTER ==================== -->
+      <section id="screen-register" class="screen">
+        <div class="sub-header">
+          <h2>Yeni Sporcu Kaydı</h2>
+          <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-auth')">Geri</button>
         </div>
-
-        <!-- ANTRENMAN MENÜSÜ -->
-        <div id="viewWorkoutMenu" class="view">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
-                <h2>Antrenman Yönetimi</h2>
-            </div>
-
-            <div style="margin-top: 8px;">
-                <button class="btn btn-secondary" style="width: 100%;" onclick="openEditProgramListModal()">⚙️ Program Düzenle</button>
-            </div>
-
-            <h3 style="font-size: 15px; margin-top: 12px; color: var(--text-muted);">Mevcut Programlar</h3>
-            <div id="programListContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">Kullanıcı Adı *</label>
+            <input type="text" id="regUsername" class="form-control" placeholder="Benzersiz kullanıcı adı" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Şifre *</label>
+            <input type="password" id="regPassword" class="form-control" placeholder="En az 4 karakter" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon Numarası</label>
+            <input type="tel" id="regPhone" class="form-control" placeholder="05XX XXX XX XX" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Güvenlik Sorusu *</label>
+            <select id="regQuestion" class="form-control">
+              <option value="İlk evcil hayvanınızın adı nedir?">İlk evcil hayvanınızın adı nedir?</option>
+              <option value="Annenizin kızlık soyadı nedir?">Annenizin kızlık soyadı nedir?</option>
+              <option value="İlkokul öğretmeninizin adı nedir?">İlkokul öğretmeninizin adı nedir?</option>
+              <option value="Doğduğunuz şehir neresidir?">Doğduğunuz şehir neresidir?</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Güvenlik Cevabı *</label>
+            <input type="text" id="regAnswer" class="form-control" placeholder="Cevabınızı yazın" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Profil Fotoğrafı (Opsiyonel)</label>
+            <input type="file" id="regAvatar" class="form-control" accept="image/*" />
+          </div>
+          <button class="btn btn-success" onclick="handleRegister()">Kaydı Tamamla</button>
         </div>
+      </section>
 
-        <!-- PROGRAM DETAY EKRANI -->
-        <div id="viewWorkoutDetail" class="view">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewWorkoutMenu')">←</button>
-                <h2 id="workoutDetailTitle">Program Detayı</h2>
-            </div>
-
-            <div class="card">
-                <label>Antrenman Tarihi (Gelecek tarih seçilemez)</label>
-                <input type="date" id="workoutDateInput" onchange="validateWorkoutDate(this)">
-            </div>
-
-            <div id="exercisesContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
+      <!-- ==================== SCREEN 3: FORGOT PASSWORD ==================== -->
+      <section id="screen-forgot" class="screen">
+        <div class="sub-header">
+          <h2>Şifre Sıfırlama</h2>
+          <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-auth')">Geri</button>
         </div>
-
-        <!-- SAĞLIK VERİSİ EKRANI -->
-        <div id="viewHealthInput" class="view">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
-                <h2>Sağlık & Vücut Ölçüleri</h2>
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">Kullanıcı Adı</label>
+            <div class="flex-row">
+              <input type="text" id="forgotUsername" class="form-control" placeholder="Kullanıcı adınız" />
+              <button class="btn btn-secondary btn-sm" onclick="loadSecurityQuestion()">Sorgula</button>
             </div>
-
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="margin-bottom: 0;">Ölçüm Tarihi</label>
-                    <span id="healthExistingBadge" style="display:none; font-size:11px; color:var(--warning); font-weight:600;">⚠️ Bu tarihte kayıt mevcut (Düzenleme Modu)</span>
-                </div>
-                <input type="date" id="healthDateInput" style="margin-bottom: 12px;" onchange="onHealthDateChange(this)">
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div><label>1. Kilo (kg)</label><input type="text" id="h_weight" placeholder="78.5" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>2. Yağ Oranı (%)</label><input type="text" id="h_fat" placeholder="15.2" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>3. Bel (cm)</label><input type="text" id="h_waist" placeholder="82" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>4. Kalça (cm)</label><input type="text" id="h_hip" placeholder="98" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>5. Omuz (cm)</label><input type="text" id="h_shoulder" placeholder="118" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>6. Kol (cm)</label><input type="text" id="h_arm" placeholder="38.5" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>7. Üst Bacak (cm)</label><input type="text" id="h_thigh" placeholder="58" oninput="sanitizeDecimalInput(this)"></div>
-                    <div><label>8. Boyun (cm)</label><input type="text" id="h_neck" placeholder="39" oninput="sanitizeDecimalInput(this)"></div>
-                </div>
-
-                <div style="margin-top: 10px;">
-                    <label>9. Notlar</label>
-                    <textarea id="h_notes" rows="2" placeholder="Enerji seviyesi vb."></textarea>
-                </div>
-
-                <button class="btn" style="margin-top: 14px; width: 100%;" onclick="saveHealthData()">Ölçümleri Kaydet</button>
+          </div>
+          <div id="forgotStep2" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Güvenlik Sorusu</label>
+              <input type="text" id="forgotQuestionDisplay" class="form-control" readonly />
             </div>
-
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-secondary" onclick="openHealthHistoryModal()">📜 Eski Kayıtlar & Düzenle</button>
-                <button class="btn btn-secondary" style="border-color: var(--secondary); color: var(--secondary);" onclick="navigateTo('viewHealthCharts')">📈 Gelişimi Grafik Olarak Gör</button>
+            <div class="form-group">
+              <label class="form-label">Güvenlik Cevabı</label>
+              <input type="text" id="forgotAnswerInput" class="form-control" placeholder="Cevabınızı girin" />
             </div>
+            <div class="form-group">
+              <label class="form-label">Yeni Şifre</label>
+              <input type="password" id="forgotNewPassword" class="form-control" placeholder="Yeni şifreniz" />
+            </div>
+            <button class="btn btn-primary" onclick="handlePasswordReset()">Şifreyi Güncelle</button>
+          </div>
         </div>
+      </section>
 
-        <!-- SAĞLIK GELİŞİM GRAFİKLERİ EKRANI -->
-        <div id="viewHealthCharts" class="view">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewHealthInput')">←</button>
-                <h2>Gelişim Grafiği</h2>
-            </div>
-
-            <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
-                <div>
-                    <label>Ölçüm Başlığı Seçiniz</label>
-                    <select id="chartMetricSelect">
-                        <option value="weight">Kilo (kg)</option>
-                        <option value="fat">Yağ Oranı (%)</option>
-                        <option value="waist">Bel (cm)</option>
-                        <option value="hip">Kalça (cm)</option>
-                        <option value="shoulder">Omuz (cm)</option>
-                        <option value="arm">Kol (cm)</option>
-                        <option value="thigh">Üst Bacak (cm)</option>
-                        <option value="neck">Boyun (cm)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label>Rapor Aralığı Seçiniz</label>
-                    <select id="chartPeriodSelect">
-                        <option value="weekly">Haftalık (Son 7 Gün - Gün Gün)</option>
-                        <option value="monthly">Aylık (Son 1 Ay - Haftalık Ortalamalar)</option>
-                        <option value="yearly">Yıllık (Son 12 Ay - Aylık Ortalamalar)</option>
-                    </select>
-                </div>
-
-                <button class="btn" onclick="renderHealthChart()">Gelişimi Gör 📊</button>
-            </div>
-
-            <div class="card" id="healthChartResultCard" style="display:none;">
-                <h3 id="healthChartTitle" style="font-size: 15px; color: var(--primary); margin-bottom: 4px;">-</h3>
-                <p id="healthChartSubtitle" style="font-size: 12px; margin-bottom: 8px;">-</p>
-                <div class="chart-wrapper" id="healthChartCanvasContainer"></div>
-            </div>
-        </div>
-
-        <!-- RAPORLAR EKRANI -->
-        <div id="viewReports" class="view">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="btn btn-secondary btn-icon" onclick="navigateTo('viewPage2')">←</button>
-                <h2>Gelişim Raporları</h2>
-            </div>
-
-            <div class="card">
-                <h3>Vücut Ölçüm Geçmişi</h3>
-                <div id="healthReportContainer" style="margin-top: 10px; max-height: 250px; overflow-y: auto;"></div>
-            </div>
-
-            <div class="card">
-                <h3>Egzersiz Geçmişi Dökümü</h3>
-                <label style="margin-top: 8px;">Program / Hareket Seç</label>
-                <select id="reportExerciseSelect" onchange="renderExerciseReport()"></select>
-                <div id="exerciseReportContainer" style="margin-top: 12px; max-height: 250px; overflow-y: auto;"></div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- MODALLAR -->
-
-    <!-- HAREKET GÖRSELİ GÖSTERİM MODALI -->
-    <div id="modalExerciseImage" class="modal" style="z-index: 1200;">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="exerciseImageModalTitle" style="color:var(--primary); font-size:16px;">Hareket Görseli</h3>
-                <button class="btn btn-secondary btn-icon" style="width:30px; height:30px; font-size:13px;" onclick="closeModal('modalExerciseImage')">✕</button>
-            </div>
-            <div class="exercise-image-box" id="exerciseImageContainer"></div>
-            <button class="btn btn-secondary" onclick="closeModal('modalExerciseImage')">Kapat</button>
-        </div>
-    </div>
-
-    <!-- GEÇMİŞ SET DÜZENLEME MODALI -->
-    <div id="modalEditHistory" class="modal">
-        <div class="modal-content">
-            <h3>Geçmiş Seti Düzenle</h3>
-            <p id="editHistoryMeta" style="font-size:12px; color:var(--primary);"></p>
+      <!-- ==================== SCREEN 4: DASHBOARD ==================== -->
+      <section id="screen-dashboard" class="screen">
+        <div class="user-banner">
+          <div class="user-info">
+            <div class="avatar-circle" id="dashAvatar">Y</div>
             <div>
-                <label>Antrenman Tarihi</label>
-                <input type="date" id="editHistoryDateInput" onchange="validateWorkoutDate(this)">
+              <div style="font-weight:700; font-size:16px;" id="dashUsername">Yavuz</div>
+              <div style="font-size:12px; color:var(--text-secondary);" id="dashStatsSummary">Aktif Sporcu</div>
             </div>
-            <div id="editHistorySetsContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
-            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="addRowToEditHistory()">+ Yeni Set Satırı Ekle</button>
-            <div style="display: flex; gap: 8px; margin-top: 6px;">
-                <button class="btn" style="flex: 1;" onclick="saveEditedHistory()">Değişiklikleri Kaydet</button>
-                <button class="btn btn-secondary" onclick="closeModal('modalEditHistory')">İptal</button>
-            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="openProfileModal()">Profil</button>
         </div>
-    </div>
 
-    <!-- YENİ KULLANICI MODAL -->
-    <div id="modalRegister" class="modal">
-        <div class="modal-content">
-            <h3>Yeni Sporcu Kaydı</h3>
-            <div><label>Kullanıcı Adı *</label><input type="text" id="regUsername" placeholder="Örn: Yavuz"></div>
-            <div><label>Şifre *</label><input type="password" id="regPassword" placeholder="••••"></div>
-            <div><label>E-Posta Adresi *</label><input type="email" id="regEmail" placeholder="ornek@mail.com"></div>
-            <div>
-                <label>Telefon Numarası * (Örn: +90 532 100 00 00)</label>
-                <input type="tel" id="regPhone" placeholder="+90 532 100 00 00">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>Cinsiyet *</label>
-                    <select id="regGender">
-                        <option value="Erkek">Erkek</option>
-                        <option value="Kadın">Kadın</option>
-                    </select>
-                </div>
-                <div><label>Yaş *</label><input type="number" id="regAge" placeholder="45"></div>
-            </div>
-            
-            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 4px;">
-                <label style="color:var(--primary);">Şifre Kurtarma Sorusu *</label>
-                <input type="text" id="regSecQuestion" placeholder="Örn: İlk evcil hayvanınızın adı?">
-            </div>
-            <div>
-                <label style="color:var(--primary);">Gizli Cevap *</label>
-                <input type="text" id="regSecAnswer" placeholder="Cevabınızı giriniz">
-            </div>
+        <div class="dashboard-menu">
+          <button class="menu-btn" onclick="openWorkoutScreen()">
+            <span class="menu-btn-icon">🏋️</span>
+            <span class="menu-btn-text">Antrenman Kaydı Gir</span>
+          </button>
 
-            <div>
-                <label>Profil Resmi Seç (Yüz Odaklı)</label>
-                <input type="file" id="regAvatarInput" accept="image/*" onchange="handleAvatarSelect(event)">
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn" style="flex: 1;" onclick="submitRegistration()">Kaydet & Oluştur</button>
-                <button class="btn btn-secondary" onclick="closeModal('modalRegister')">İptal</button>
-            </div>
+          <button class="menu-btn" onclick="openProgramsScreen()">
+            <span class="menu-btn-icon">📋</span>
+            <span class="menu-btn-text">Program Düzenle</span>
+          </button>
+
+          <button class="menu-btn" onclick="openBodyMetricsScreen()">
+            <span class="menu-btn-icon">⚖️</span>
+            <span class="menu-btn-text">Vücut Ölçümleri</span>
+          </button>
+
+          <button class="menu-btn" onclick="openReportsScreen()">
+            <span class="menu-btn-icon">📈</span>
+            <span class="menu-btn-text">Gelişim Grafikleri & Raporlar</span>
+          </button>
+
+          <button class="menu-btn" onclick="manualSyncNow()">
+            <span class="menu-btn-icon">☁️</span>
+            <span class="menu-btn-text">Bulut ile Senkronize Et</span>
+          </button>
+
+          <button class="menu-btn" onclick="handleLogout()">
+            <span class="menu-btn-icon">🚪</span>
+            <span class="menu-btn-text">Çıkış Yap</span>
+          </button>
         </div>
-    </div>
+      </section>
 
-    <!-- ŞİFREMİ UNUTTUM MODAL -->
-    <div id="modalForgotPassword" class="modal">
-        <div class="modal-content">
-            <h3>Şifremi Unuttum</h3>
-            <div id="forgotStep1">
-                <p style="margin-bottom: 10px;">Kayıtlı E-Posta veya Telefon Numaranızı (+90 5XX...) giriniz.</p>
-                <div><label>E-Posta veya Telefon</label><input type="text" id="forgotIdentityInput"></div>
-                <button class="btn" style="margin-top: 12px; width: 100%;" onclick="verifyForgotIdentity()">Sorgula</button>
-            </div>
-
-            <div id="forgotStep2" style="display: none;">
-                <p style="color: var(--primary); font-weight: 600;" id="forgotQuestionText">-</p>
-                <div style="margin-top: 10px;"><label>Gizli Cevabınız</label><input type="text" id="forgotAnswerInput"></div>
-                <button class="btn" style="margin-top: 12px; width: 100%;" onclick="verifyForgotAnswer()">Şifreyi Göster</button>
-            </div>
-
-            <button class="btn btn-secondary" onclick="closeModal('modalForgotPassword')">Kapat</button>
+      <!-- ==================== SCREEN 5: PROGRAM MANAGEMENT ==================== -->
+      <section id="screen-programs" class="screen">
+        <div class="sub-header">
+          <h2>Program Düzenle</h2>
+          <button class="btn btn-secondary btn-sm" onclick="returnToDashboard()">Ana Menü</button>
         </div>
-    </div>
 
-    <!-- PROFİL DÜZENLEME MODAL -->
-    <div id="modalProfileUpdate" class="modal">
-        <div class="modal-content">
-            <h3>Profil Bilgilerini Güncelle</h3>
-            <div><label>E-Posta</label><input type="email" id="editEmail"></div>
-            <div><label>Telefon (+90 5XX...)</label><input type="tel" id="editPhone"></div>
-            <div><label>Yeni Şifre</label><input type="password" id="editPassword"></div>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn" style="flex: 1;" onclick="saveProfileUpdate()">Güncelle</button>
-                <button class="btn btn-secondary" onclick="closeModal('modalProfileUpdate')">Kapat</button>
+        <!-- Program Seçimi / Oluşturma -->
+        <div class="card">
+          <div class="card-title">Program Seç veya Yeni Oluştur</div>
+          <div class="form-group">
+            <label class="form-label">Mevcut Programlar</label>
+            <div class="flex-row">
+              <select id="programSelectManage" class="form-control" onchange="renderProgramExercises()"></select>
+              <button class="btn btn-danger btn-sm" onclick="deleteSelectedProgram()">Sil</button>
             </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Yeni Program Adı</label>
+            <div class="flex-row">
+              <input type="text" id="newProgramName" class="form-control" placeholder="Örn: Push / Göğüs-Omuz-Triceps" />
+              <button class="btn btn-success btn-sm" onclick="createNewProgram()">Oluştur</button>
+            </div>
+          </div>
         </div>
-    </div>
 
-    <!-- PROGRAM DÜZENLEME & YENİ PROGRAM & HAREKET EKLE/DÜZENLE/ÇIKAR MODAL -->
-    <div id="modalEditProgramList" class="modal">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Program Yönetimi</h3>
-                <button class="btn" style="font-size:11px; padding:8px 12px;" onclick="openCreateProgramModal()">+ Yeni Program</button>
+        <!-- Programa Egzersiz Ekle -->
+        <div class="card">
+          <div class="card-title">Programa Egzersiz Ekle</div>
+
+          <div class="form-group">
+            <label class="form-label" for="muscleGroupSelect">Kas Grubu Seç</label>
+            <select id="muscleGroupSelect" class="form-control" onchange="handleMuscleGroupChange()">
+              <option value="Hepsi" selected>Hepsi</option>
+              <option value="Chest (Göğüs)">Chest (Göğüs)</option>
+              <option value="Back (Sırt)">Back (Sırt)</option>
+              <option value="Shoulders (Omuz)">Shoulders (Omuz)</option>
+              <option value="Biceps (Ön Kol)">Biceps (Ön Kol)</option>
+              <option value="Triceps (Arka Kol)">Triceps (Arka Kol)</option>
+              <option value="Quads (Ön Bacak)">Quads (Ön Bacak)</option>
+              <option value="Hamstrings (Arka Bacak)">Hamstrings (Arka Bacak)</option>
+              <option value="Glutes (Kalça)">Glutes (Kalça)</option>
+              <option value="Abs (Karın)">Abs (Karın)</option>
+              <option value="Forearms & Wrists (Bilek ve Ön Kol)">Forearms & Wrists (Bilek ve Ön Kol)</option>
+              <option value="Calves (Baldır)">Calves (Baldır)</option>
+              <option value="Cardio (Kardiyo)">Cardio (Kardiyo)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="exerciseSearchInput">Egzersiz Ara / Seç</label>
+            <div class="search-select-wrapper" id="exerciseSearchWrapper">
+              <div class="search-input-container">
+                <input
+                  type="text"
+                  id="exerciseSearchInput"
+                  class="form-control"
+                  placeholder="Hareket adı yazın veya listeden seçin..."
+                  autocomplete="off"
+                  onfocus="openExerciseDropdown()"
+                  oninput="handleExerciseSearchInput()"
+                />
+                <button
+                  type="button"
+                  id="clearExerciseSearchBtn"
+                  class="clear-search-btn"
+                  title="Aramayı Temizle"
+                  onclick="clearExerciseSearch()"
+                >✕</button>
+              </div>
+              <div id="exerciseDropdownList" class="exercise-dropdown-list"></div>
             </div>
-            <div id="editProgramListContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-            <button class="btn btn-secondary" onclick="closeModalAndAutoSync('modalEditProgramList')">Kapat</button>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Hedef Set Sayısı</label>
+              <input type="number" id="targetSetsInput" class="form-control" value="4" min="1" max="15" />
+            </div>
+            <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:10px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="isBodyweightCheckbox" />
+                <span>Vücut Ağırlığı (Kg Yok)</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="addExerciseToProgram()">Hareketi Programa Ekle</button>
         </div>
-    </div>
 
-    <!-- YENİ PROGRAM OLUŞTURMA MODAL -->
-    <div id="modalCreateProgram" class="modal">
-        <div class="modal-content">
-            <h3>Yeni Antrenman Programı</h3>
-            <div><label>Program Adı</label><input type="text" id="newProgramName" placeholder="Örn: İtiş (Chest/Shoulder)"></div>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn" style="flex: 1;" onclick="saveNewProgram()">Oluştur</button>
-                <button class="btn btn-secondary" onclick="closeModal('modalCreateProgram')">İptal</button>
-            </div>
+        <!-- Programdaki Hareketler -->
+        <div class="card">
+          <div class="card-title">
+            <span>Programdaki Hareketler</span>
+            <span class="badge" id="programExerciseCount">0 Hareket</span>
+          </div>
+          <div id="programExercisesList"></div>
         </div>
-    </div>
+      </section>
 
-    <!-- HAREKET EKLEME / DÜZENLEME MODAL -->
-    <div id="modalAddExercise" class="modal">
-        <div class="modal-content">
-            <h3 id="exerciseModalTitle">Programa Egzersiz Ekle</h3>
-            <div>
-                <label>Kas Grubu Seç</label>
-                <select id="categorySelect" onchange="onCategoryChange()"></select>
-            </div>
-            <div>
-                <label>Egzersiz Ara/Seç</label>
-                <input type="text" id="exerciseSearchInput" placeholder="Aramak için yazın..." onfocus="showExerciseDropdown()" oninput="filterExercises()">
-                <div id="exerciseSearchResults" class="search-results"></div>
-            </div>
-            <div id="selectedExerciseBadge" style="display: none;" class="last-record-badge">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                    <span>Seçilen: <strong id="selectedExerciseName">-</strong></span>
-                    <button type="button" class="btn-info-q" onclick="openSelectedExerciseImageModal()" title="Hareket Görselini Göster">?</button>
-                </div>
-            </div>
-            <div>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
-                    <input type="checkbox" id="isWeightedCheckbox" checked style="width: auto;"> Ağırlıklı Hareket (Kilo + Tekrar)
-                </label>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn" style="flex: 1;" id="exerciseModalSaveBtn" onclick="confirmExerciseAction()">Ekle</button>
-                <button class="btn btn-secondary" onclick="closeModal('modalAddExercise')">İptal</button>
-            </div>
+      <!-- ==================== SCREEN 6: WORKOUT LOGGING ==================== -->
+      <section id="screen-workout" class="screen">
+        <div class="sub-header">
+          <h2>Antrenman Kaydı</h2>
+          <button class="btn btn-secondary btn-sm" onclick="returnToDashboard()">Ana Menü</button>
         </div>
-    </div>
 
-    <!-- SAĞLIK GEÇMİŞİ DÜZENLEME/SİLME MODAL -->
-    <div id="modalHealthHistory" class="modal">
-        <div class="modal-content">
-            <h3>Geçmiş Ölçümler & Düzenle/Sil</h3>
-            <div id="healthHistoryList" style="display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto;"></div>
-            <button class="btn btn-secondary" onclick="closeModalAndAutoSync('modalHealthHistory')">Kapat</button>
+        <div class="card">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Antrenman Tarihi</label>
+              <input type="date" id="workoutDateInput" class="form-control" onchange="validateWorkoutDate(); loadWorkoutExerciseDetails();" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Program Seç</label>
+              <select id="workoutProgramSelect" class="form-control" onchange="onWorkoutProgramChange()"></select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Hareket Seç</label>
+            <div class="flex-row">
+              <select id="workoutExerciseSelect" class="form-control" onchange="loadWorkoutExerciseDetails()"></select>
+              <button class="btn btn-secondary btn-icon-only" title="Hareket Görseli" onclick="openExerciseImageModal()">?</button>
+            </div>
+          </div>
         </div>
-    </div>
 
-    <script>
-        const EXERCISE_DATABASE = {
-            "Göğüs": ["Barbell Bench Press", "Incline Barbell Bench Press", "Dumbbell Bench Press", "Incline Dumbbell Bench Press", "Chest Press Machine", "Dumbbell Fly", "Cable Crossover", "Chest Dips", "Push-Up"],
-            "Sırt": ["Pull-Up (Barfiks)", "Chin-Up", "Lat Pulldown (Wide Grip)", "Barbell Bent-Over Row", "Dumbbell One-Arm Row", "T-Bar Row", "Seated Cable Row", "Hyperextension"],
-            "Omuz": ["Barbell Overhead Press", "Dumbbell Shoulder Press", "Arnold Press", "Dumbbell Lateral Raise", "Cable Lateral Raise", "Dumbbell Front Raise", "Face Pull", "Barbell Shrug"],
-            "Ön Kol": ["Barbell Biceps Curl", "EZ-Bar Curl", "Dumbbell Biceps Curl", "Hammer Curl", "Preacher Curl (EZ-Bar)", "Concentration Curl"],
-            "Arka Kol": ["Cable Triceps Pushdown", "Cable Rope Pushdown", "Skull Crusher", "Overhead Dumbbell Extension", "Close-Grip Bench Press", "Triceps Dips"],
-            "Ön Bacak": ["Barbell Back Squat", "Leg Press", "Leg Extension", "Walking Lunge", "Bulgarian Split Squat"],
-            "Arka Bacak": ["Conventional Deadlift", "Romanian Deadlift (RDL)", "Lying Leg Curl", "Seated Leg Curl"],
-            "Kalça": ["Barbell Hip Thrust", "Glute Bridge", "Cable Glute Kickback", "Hip Abduction Machine"],
-            "Karın": ["Crunch", "Cable Crunch", "Hanging Leg Raise", "Plank", "Ab Wheel Rollout", "Russian Twist"],
-            "Bilek ve Ön Kol": ["Barbell Wrist Curl", "Reverse Barbell Wrist Curl", "Farmer's Walk"],
-            "Baldır": ["Standing Calf Raise", "Seated Calf Raise"]
+        <!-- Set Giriş Alanı -->
+        <div class="card" id="workoutEntryCard">
+          <div class="card-title">
+            <span id="currentExerciseTitle">Set Detayları</span>
+            <button class="btn btn-secondary btn-sm" onclick="addSetRow()">+ Set Ekle</button>
+          </div>
+          <div id="setsContainer"></div>
+          <button class="btn btn-success" style="margin-top:10px;" onclick="saveWorkoutLog()">Antrenmanı Kaydet</button>
+        </div>
+
+        <!-- Son 5 Geçmiş Kayıt -->
+        <div class="card">
+          <div class="card-title">Bu Programdaki Son 5 Kayıt</div>
+          <div id="recentWorkoutHistory"></div>
+        </div>
+      </section>
+
+      <!-- ==================== SCREEN 7: BODY METRICS ==================== -->
+      <section id="screen-body" class="screen">
+        <div class="sub-header">
+          <h2>Vücut Ölçümleri</h2>
+          <button class="btn btn-secondary btn-sm" onclick="returnToDashboard()">Ana Menü</button>
+        </div>
+
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">Ölçüm Tarihi</label>
+            <input type="date" id="bodyDateInput" class="form-control" onchange="validateBodyDate()" />
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Kilo (kg) *</label>
+              <input type="number" step="0.1" id="bodyWeight" class="form-control" placeholder="82.5" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Yağ Oranı (%)</label>
+              <input type="number" step="0.1" id="bodyFat" class="form-control" placeholder="18.0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bel (cm)</label>
+              <input type="number" step="0.5" id="bodyWaist" class="form-control" placeholder="88" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kalça (cm)</label>
+              <input type="number" step="0.5" id="bodyHip" class="form-control" placeholder="100" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Omuz (cm)</label>
+              <input type="number" step="0.5" id="bodyShoulder" class="form-control" placeholder="122" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kol (cm)</label>
+              <input type="number" step="0.5" id="bodyArm" class="form-control" placeholder="38" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Üst Bacak (cm)</label>
+              <input type="number" step="0.5" id="bodyThigh" class="form-control" placeholder="58" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Boyun (cm)</label>
+              <input type="number" step="0.5" id="bodyNeck" class="form-control" placeholder="40" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Not</label>
+            <input type="text" id="bodyNote" class="form-control" placeholder="Sabah aç karnına ölçüm vb." />
+          </div>
+
+          <button class="btn btn-success" onclick="saveBodyMetric()">Ölçümü Kaydet</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Son Vücut Ölçümleri</div>
+          <div id="bodyHistoryList"></div>
+        </div>
+      </section>
+
+      <!-- ==================== SCREEN 8: REPORTS & CHARTS ==================== -->
+      <section id="screen-reports" class="screen">
+        <div class="sub-header">
+          <h2>Gelişim Grafikleri</h2>
+          <button class="btn btn-secondary btn-sm" onclick="returnToDashboard()">Ana Menü</button>
+        </div>
+
+        <div class="card">
+          <div class="tabs">
+            <button class="tab-btn active" id="tabBodyChart" onclick="switchReportMode('body')">Vücut Ölçümleri</button>
+            <button class="tab-btn" id="tabExerciseChart" onclick="switchReportMode('exercise')">Hareket Gelişimi</button>
+          </div>
+
+          <div id="bodyChartControls">
+            <div class="form-group">
+              <label class="form-label">Metrik Seç</label>
+              <select id="reportBodyMetricSelect" class="form-control" onchange="renderReportChart()">
+                <option value="weight">Kilo (kg)</option>
+                <option value="fat">Yağ Oranı (%)</option>
+                <option value="waist">Bel (cm)</option>
+                <option value="arm">Kol (cm)</option>
+                <option value="shoulder">Omuz (cm)</option>
+                <option value="thigh">Üst Bacak (cm)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="exerciseChartControls" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Hareket Seç</label>
+              <select id="reportExerciseSelect" class="form-control" onchange="renderReportChart()"></select>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <button class="tab-btn active" id="period7d" onclick="setReportPeriod('7d')">Haftalık</button>
+            <button class="tab-btn" id="period4w" onclick="setReportPeriod('4w')">Aylık</button>
+            <button class="tab-btn" id="period12m" onclick="setReportPeriod('12m')">Yıllık</button>
+          </div>
+
+          <div class="chart-box" id="chartRenderArea"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+  <!-- Profile Edit Modal -->
+  <div id="profileModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="card-title">
+        <span>Profil Bilgileri</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('profileModal')">Kapat</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kullanıcı Adı</label>
+        <input type="text" id="profUsername" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefon</label>
+        <input type="tel" id="profPhone" class="form-control" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Yeni Şifre (Değiştirmek istemiyorsanız boş bırakın)</label>
+        <input type="password" id="profNewPassword" class="form-control" placeholder="••••••••" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Profil Fotoğrafını Güncelle</label>
+        <input type="file" id="profAvatarInput" class="form-control" accept="image/*" />
+      </div>
+      <button class="btn btn-primary" onclick="saveProfileChanges()">Değişiklikleri Kaydet</button>
+    </div>
+  </div>
+
+  <!-- Edit Program Exercise Modal -->
+  <div id="editProgExModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="card-title">
+        <span>Hareket Ayarlarını Düzenle</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('editProgExModal')">Kapat</button>
+      </div>
+      <input type="hidden" id="editProgExIndex" />
+      <div class="form-group">
+        <label class="form-label">Hareket Adı</label>
+        <input type="text" id="editProgExName" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hedef Set Sayısı</label>
+        <input type="number" id="editProgExSets" class="form-control" min="1" max="15" />
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="editProgExBw" />
+          <span>Vücut Ağırlığı (Kg Yok)</span>
+        </label>
+      </div>
+      <button class="btn btn-success" onclick="saveEditedProgramExercise()">Güncelle</button>
+    </div>
+  </div>
+
+  <!-- Edit Past Workout Modal -->
+  <div id="editWorkoutModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="card-title">
+        <span>Geçmiş Antrenman Kaydını Düzenle</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('editWorkoutModal')">Kapat</button>
+      </div>
+      <input type="hidden" id="editWorkoutId" />
+      <div id="editWorkoutTitle" style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;"></div>
+      <div id="editWorkoutSetsContainer"></div>
+      <button class="btn btn-success" style="margin-top:10px;" onclick="saveEditedWorkoutLog()">Kaydı Güncelle</button>
+    </div>
+  </div>
+
+  <!-- Exercise Image Modal -->
+  <div id="exerciseImageModal" class="modal-overlay">
+    <div class="modal-card" style="text-align:center;">
+      <div class="card-title">
+        <span id="imgModalTitle">Hareket Görseli</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('exerciseImageModal')">Kapat</button>
+      </div>
+      <img id="exercisePreviewImg" src="" alt="Hareket Görseli" style="max-width:100%; border-radius:12px; border:1px solid var(--border-color); display:none; margin:0 auto;" />
+      <div id="exerciseImgFallback" class="empty-state" style="display:none;">
+        Bu hareket için görsel dosyası bulunamadı.
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // ==================== FIREBASE CONFIG ====================
+    const firebaseConfig = {
+      projectId: "fitness-8ecf7",
+      authDomain: "fitness-8ecf7.firebaseapp.com",
+      storageBucket: "fitness-8ecf7.appspot.com"
+    };
+
+    let db = null;
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.firestore();
+    } catch (e) {
+      console.warn("Firebase başlatılamadı, çevrimdışı mod aktif:", e);
+    }
+
+    // ==================== EXERCISE DATABASE ====================
+    const EXERCISE_DATABASE = {
+      "Chest (Göğüs)": [
+        "Barbell Bench Press",
+        "Incline Barbell Bench Press",
+        "Decline Barbell Bench Press",
+        "Dumbbell Bench Press",
+        "Incline Dumbbell Bench Press",
+        "Decline Dumbbell Bench Press",
+        "Chest Press Machine",
+        "Incline Chest Press Machine",
+        "Decline Chest Press Machine",
+        "Dumbbell Fly",
+        "Incline Dumbbell Fly",
+        "Cable Crossover",
+        "Low Cable Crossover",
+        "High Cable Crossover",
+        "Single-Arm Cable Crossover",
+        "Chest Dips",
+        "Machine Dips",
+        "Push-Up",
+        "Decline Push-Up",
+        "Incline Push-Up",
+        "Pec Deck Fly",
+        "Machine Chest Fly",
+        "Landmine Press",
+        "Smith Machine Bench Press",
+        "Cable Chest Press (Standing)",
+        "Dumbbell Pullover"
+      ],
+      "Back (Sırt)": [
+        "Pull-Up (Barfiks)",
+        "Chin-Up",
+        "Neutral Grip Pull-Up",
+        "Lat Pulldown (Wide Grip)",
+        "Lat Pulldown (Close Grip / V-Bar)",
+        "Neutral Grip Lat Pulldown",
+        "Reverse Grip Lat Pulldown",
+        "Barbell Bent-Over Row",
+        "Underhand Barbell Row",
+        "Dumbbell One-Arm Row",
+        "T-Bar Row",
+        "Seated Cable Row",
+        "Wide Grip Seated Cable Row",
+        "Low Row Machine",
+        "High Row Machine",
+        "Straight-Arm Pulldown",
+        "Chest-Supported Row",
+        "Inverted Row (Bodyweight)",
+        "Deadlift (Conventional)",
+        "Rack Pull",
+        "Hyperextension"
+      ],
+      "Shoulders (Omuz)": [
+        "Barbell Overhead Press (Military Press)",
+        "Push Press",
+        "Dumbbell Shoulder Press",
+        "Seated Dumbbell Shoulder Press",
+        "Arnold Press",
+        "Dumbbell Lateral Raise",
+        "Cable Lateral Raise",
+        "Machine Lateral Raise",
+        "Bent-Over Rear Delt Fly",
+        "Reverse Pec Deck Fly",
+        "Rear Delt Machine Fly",
+        "Face Pull",
+        "Cable Rear Delt Fly",
+        "Dumbbell Front Raise",
+        "Plate Front Raise",
+        "Cable Front Raise",
+        "Barbell Shrug",
+        "Dumbbell Shrug",
+        "Upright Row",
+        "Landmine Press (Shoulder)"
+      ],
+      "Biceps (Ön Kol)": [
+        "Barbell Biceps Curl",
+        "EZ-Bar Curl",
+        "Z-Bar Curl",
+        "Close-Grip EZ-Bar Curl",
+        "Dumbbell Biceps Curl",
+        "Incline Dumbbell Biceps Curl",
+        "Hammer Curl",
+        "Cross-Body Hammer Curl",
+        "Preacher Curl (EZ-Bar)",
+        "Dumbbell Preacher Curl",
+        "Concentration Curl",
+        "Cable Biceps Curl",
+        "High Cable (Cali) Curl",
+        "Zottman Curl",
+        "Incline Hammer Curl"
+      ],
+      "Triceps (Arka Kol)": [
+        "Cable Triceps Pushdown (Straight Bar)",
+        "Cable Rope Pushdown",
+        "Overhead Cable Triceps Extension",
+        "Skull Crusher (EZ-Bar)",
+        "Dumbbell Skull Crusher",
+        "Overhead Dumbbell Extension",
+        "Close-Grip Bench Press",
+        "Triceps Dips",
+        "Bench Dips",
+        "Kickback (Dumbbell)",
+        "Cable Kickback",
+        "Tate Press",
+        "Close-Grip Pushdown (Rope)"
+      ],
+      "Quads (Ön Bacak)": [
+        "Barbell Back Squat",
+        "Front Squat",
+        "Goblet Squat",
+        "Hack Squat",
+        "Leg Press",
+        "45-Degree Leg Press",
+        "Leg Extension",
+        "Walking Lunge",
+        "Reverse Lunge",
+        "Bulgarian Split Squat",
+        "Step-Up",
+        "Sissy Squat",
+        "Sled Push",
+        "Wall Sit"
+      ],
+      "Hamstrings (Arka Bacak)": [
+        "Conventional Deadlift",
+        "Sumo Deadlift",
+        "Romanian Deadlift (RDL)",
+        "Dumbbell Romanian Deadlift",
+        "Stiff-Legged Deadlift",
+        "Lying Leg Curl",
+        "Seated Leg Curl",
+        "Standing Leg Curl",
+        "Good Morning",
+        "Nordic Hamstring Curl",
+        "Swiss Ball Hamstring Curl"
+      ],
+      "Glutes (Kalça)": [
+        "Barbell Hip Thrust",
+        "Machine Hip Thrust",
+        "Glute Bridge",
+        "Barbell Glute Bridge",
+        "Cable Glute Kickback",
+        "Smith Machine Kickback",
+        "Hip Abduction Machine",
+        "Cable Hip Abduction",
+        "Hyper-Extension (Glute-Focused)",
+        "Cable Pull-Through",
+        "Band Hip Thrust"
+      ],
+      "Abs (Karın)": [
+        "Crunch",
+        "Cable Crunch",
+        "Decline Crunch",
+        "Hanging Leg Raise",
+        "Hanging Knee Raise",
+        "Captain's Chair Leg Raise",
+        "Lying Leg Raise",
+        "Plank",
+        "Side Plank",
+        "Ab Wheel Rollout",
+        "Russian Twist",
+        "Woodchopper (Cable)",
+        "Toes to Bar",
+        "Sit-up",
+        "Decline Sit-up",
+        "V-Sit Up",
+        "Bicycle Crunch",
+        "Hanging Windshield Wipers"
+      ],
+      "Forearms & Wrists (Bilek ve Ön Kol)": [
+        "Barbell Wrist Curl",
+        "Reverse Barbell Wrist Curl",
+        "Dumbbell Wrist Curl",
+        "Farmer's Walk",
+        "Plate Pinch Hold",
+        "Dead Hang (Barfiks Barında Asılı Kalma)",
+        "Reverse Curl (Barbell)",
+        "Wrist Roller"
+      ],
+      "Calves (Baldır)": [
+        "Standing Calf Raise",
+        "Seated Calf Raise",
+        "Leg Press Calf Raise",
+        "Donkey Calf Raise",
+        "Single-Leg Calf Raise",
+        "Box Calf Raise"
+      ],
+      "Cardio (Kardiyo)": [
+        "Treadmill Walk (Normal Yürüyüş)",
+        "Incline Treadmill Walk (Rampalı/Eğimli Yürüyüş)",
+        "Treadmill Run (Koşu)",
+        "Elliptical Trainer (Eliptik Bisiklet)",
+        "Stationary Bike / Upright Bike (Dikey Bisiklet)",
+        "Recumbent Bike (Yatay Bisiklet)",
+        "Spinning Bike (Spinning Bisikleti)",
+        "Rowing Machine (Kürek Makinesi)",
+        "Stair Climber / StairMaster (Merdiven Makinesi)",
+        "Jump Rope (İp Atlama)",
+        "Jumping Jacks",
+        "Burpees",
+        "Mountain Climbers",
+        "Battle Ropes"
+      ]
+    };
+
+    // ==================== STATE ====================
+    const USERS_DB_KEY = "fbr_users_db";
+    let currentUser = null;
+    let userData = null;
+    let hasUnsyncedChanges = false;
+    let selectedExerciseName = "";
+    let reportMode = "body";
+    let reportPeriod = "7d";
+
+    // ==================== UTILITIES ====================
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function getTodayStr() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function setSyncStatus(state, label) {
+      const badge = document.getElementById("syncBadge");
+      const text = document.getElementById("syncText");
+      badge.className = "sync-badge";
+      if (state === "pending") badge.classList.add("pending");
+      if (state === "syncing") badge.classList.add("syncing");
+      if (state === "error") badge.classList.add("error");
+      text.textContent = label;
+    }
+
+    function markDirty() {
+      hasUnsyncedChanges = true;
+      setSyncStatus("pending", "Senkronize Bekliyor");
+      saveLocalUserData();
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(screenId).classList.add("active");
+      window.scrollTo(0, 0);
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove("open");
+      if (hasUnsyncedChanges) {
+        syncToFirebase();
+      }
+    }
+
+    // ==================== LOCAL STORAGE & DEFAULT DATA ====================
+    function getUsersDb() {
+      try {
+        return JSON.parse(localStorage.getItem(USERS_DB_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveUsersDb(dbObj) {
+      localStorage.setItem(USERS_DB_KEY, JSON.stringify(dbObj));
+    }
+
+    function ensureDefaultUser() {
+      const users = getUsersDb();
+      if (!users["Yavuz"]) {
+        users["Yavuz"] = {
+          username: "Yavuz",
+          password: "123",
+          phone: "",
+          question: "İlk evcil hayvanınızın adı nedir?",
+          answer: "karabas",
+          avatar: ""
         };
+        saveUsersDb(users);
+      }
+    }
 
-        const HEALTH_FIELDS = ["weight", "fat", "waist", "hip", "shoulder", "arm", "thigh", "neck"];
-        const HEALTH_LABELS = {
-            weight: { name: "Kilo", unit: "kg" },
-            fat: { name: "Yağ Oranı", unit: "%" },
-            waist: { name: "Bel", unit: "cm" },
-            hip: { name: "Kalça", unit: "cm" },
-            shoulder: { name: "Omuz", unit: "cm" },
-            arm: { name: "Kol", unit: "cm" },
-            thigh: { name: "Üst Bacak", unit: "cm" },
-            neck: { name: "Boyun", unit: "cm" }
+    function getDefaultUserData() {
+      return {
+        programs: [
+          {
+            id: "prog_push",
+            name: "Push (İtiş)",
+            exercises: [
+              { name: "Dumbbell Bench Press", sets: 4, bodyweight: false },
+              { name: "Incline Dumbbell Bench Press", sets: 4, bodyweight: false },
+              { name: "Dumbbell Shoulder Press", sets: 3, bodyweight: false },
+              { name: "Dumbbell Lateral Raise", sets: 4, bodyweight: false },
+              { name: "Cable Rope Pushdown", sets: 3, bodyweight: false }
+            ]
+          },
+          {
+            id: "prog_pull",
+            name: "Pull (Çekiş)",
+            exercises: [
+              { name: "Lat Pulldown (Wide Grip)", sets: 4, bodyweight: false },
+              { name: "Seated Cable Row", sets: 4, bodyweight: false },
+              { name: "Face Pull", sets: 3, bodyweight: false },
+              { name: "Dumbbell Biceps Curl", sets: 3, bodyweight: false },
+              { name: "Hammer Curl", sets: 3, bodyweight: false }
+            ]
+          },
+          {
+            id: "prog_legs",
+            name: "Legs & Abs & Cardio",
+            exercises: [
+              { name: "Leg Press", sets: 4, bodyweight: false },
+              { name: "Lying Leg Curl", sets: 3, bodyweight: false },
+              { name: "Leg Extension", sets: 3, bodyweight: false },
+              { name: "Decline Sit-up", sets: 3, bodyweight: true },
+              { name: "Captain's Chair Leg Raise", sets: 3, bodyweight: true },
+              { name: "Incline Treadmill Walk (Rampalı/Eğimli Yürüyüş)", sets: 1, bodyweight: true }
+            ]
+          }
+        ],
+        workouts: [],
+        bodyMetrics: [],
+        updatedAt: Date.now()
+      };
+    }
+
+    function loadLocalUserData(username) {
+      const key = `fbr_user_${username}`;
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          userData = JSON.parse(raw);
+          if (!userData.programs) userData.programs = [];
+          if (!userData.workouts) userData.workouts = [];
+          if (!userData.bodyMetrics) userData.bodyMetrics = [];
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      userData = getDefaultUserData();
+      saveLocalUserData();
+    }
+
+    function saveLocalUserData() {
+      if (!currentUser || !userData) return;
+      userData.updatedAt = Date.now();
+      localStorage.setItem(`fbr_user_${currentUser.username}`, JSON.stringify(userData));
+    }
+
+    // ==================== FIREBASE SYNC ====================
+    async function syncFromFirebase(username) {
+      if (!db) return;
+      setSyncStatus("syncing", "Yükleniyor...");
+      try {
+        const docSnap = await db.collection("fitness_users").doc(username).get();
+        if (docSnap.exists) {
+          const remoteData = docSnap.data();
+          if (remoteData && remoteData.payload) {
+            const parsed = JSON.parse(remoteData.payload);
+            if (!userData || (parsed.updatedAt && parsed.updatedAt >= (userData.updatedAt || 0))) {
+              userData = parsed;
+              saveLocalUserData();
+            }
+          }
+        } else {
+          await syncToFirebase();
+        }
+        hasUnsyncedChanges = false;
+        setSyncStatus("synced", "Senkronize");
+      } catch (err) {
+        console.warn("Firebase okuma hatası:", err);
+        setSyncStatus("error", "Çevrimdışı");
+      }
+    }
+
+    async function syncToFirebase() {
+      if (!db || !currentUser || !userData) return;
+      setSyncStatus("syncing", "Senkronize Ediliyor...");
+      try {
+        await db.collection("fitness_users").doc(currentUser.username).set({
+          username: currentUser.username,
+          payload: JSON.stringify(userData),
+          syncedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        hasUnsyncedChanges = false;
+        setSyncStatus("synced", "Senkronize");
+      } catch (err) {
+        console.warn("Firebase yazma hatası:", err);
+        setSyncStatus("error", "Senkronize Hatası");
+      }
+    }
+
+    async function manualSyncNow() {
+      await syncToFirebase();
+      showToast("Bulut senkronizasyonu tamamlandı.");
+    }
+
+    async function returnToDashboard() {
+      updateDashboardSummary();
+      showScreen("screen-dashboard");
+      if (hasUnsyncedChanges) {
+        await syncToFirebase();
+      }
+    }
+
+    // ==================== AUTH HANDLERS ====================
+    function processAvatarImage(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve("");
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext("2d");
+            const minSide = Math.min(img.width, img.height);
+            const sx = (img.width - minSide) / 2;
+            const sy = (img.height - minSide) / 2;
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 200, 200);
+            resolve(canvas.toDataURL("image/jpeg", 0.8));
+          };
+          img.src = e.target.result;
         };
+        reader.readAsDataURL(file);
+      });
+    }
 
-        let currentUser = null;
-        let selectedProgramId = null;
-        let selectedAddExerciseName = "";
-        let editingExerciseIndex = null;
-        let regAvatarBase64 = "";
-        let hasUnsyncedChanges = false;
-        let isSyncingNow = false;
+    async function handleLogin() {
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if (!username) return showToast("Lütfen kullanıcı adını girin.");
 
-        window.onFirebaseInit = async function() {
-            await pullAllUsersFromCloud();
-            populateLoginUserDropdown();
-            if (currentUser) {
-                if (hasUnsyncedChanges) {
-                    await syncToCloud(false);
-                } else {
-                    await pullUserDataFromCloud(currentUser);
-                    refreshCurrentView();
-                }
-            }
-        };
+      const users = getUsersDb();
+      const user = users[username];
+      if (!user || user.password !== password) {
+        return showToast("Kullanıcı adı veya şifre hatalı!");
+      }
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            initDefaultUser();
-            populateLoginUserDropdown();
-            setTodayDates();
-            updateSyncIndicator();
+      currentUser = user;
+      loadLocalUserData(username);
+      updateDashboardSummary();
+      showScreen("screen-dashboard");
+      showToast(`Hoş geldin, ${username}!`);
+      await syncFromFirebase(username);
+      updateDashboardSummary();
+    }
 
-            if (window.fbReady) {
-                await pullAllUsersFromCloud();
-                populateLoginUserDropdown();
-            }
+    async function handleRegister() {
+      const username = document.getElementById("regUsername").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const phone = document.getElementById("regPhone").value.trim();
+      const question = document.getElementById("regQuestion").value;
+      const answer = document.getElementById("regAnswer").value.trim().toLowerCase();
+      const avatarFile = document.getElementById("regAvatar").files[0];
+
+      if (!username || !password || !answer) {
+        return showToast("Lütfen zorunlu (*) alanları doldurun.");
+      }
+
+      const users = getUsersDb();
+      if (users[username]) {
+        return showToast("Bu kullanıcı adı zaten kayıtlı.");
+      }
+
+      const avatarData = await processAvatarImage(avatarFile);
+      users[username] = { username, password, phone, question, answer, avatar: avatarData };
+      saveUsersDb(users);
+
+      showToast("Kayıt başarılı! Giriş yapabilirsiniz.");
+      document.getElementById("loginUsername").value = username;
+      document.getElementById("loginPassword").value = "";
+      showScreen("screen-auth");
+    }
+
+    function loadSecurityQuestion() {
+      const username = document.getElementById("forgotUsername").value.trim();
+      const users = getUsersDb();
+      if (!users[username]) return showToast("Kullanıcı bulunamadı.");
+      document.getElementById("forgotQuestionDisplay").value = users[username].question;
+      document.getElementById("forgotStep2").style.display = "block";
+    }
+
+    function handlePasswordReset() {
+      const username = document.getElementById("forgotUsername").value.trim();
+      const ans = document.getElementById("forgotAnswerInput").value.trim().toLowerCase();
+      const newPass = document.getElementById("forgotNewPassword").value;
+      const users = getUsersDb();
+      const user = users[username];
+      if (!user) return;
+      if (user.answer !== ans) return showToast("Güvenlik cevabı hatalı!");
+      if (!newPass) return showToast("Yeni şifre girin.");
+
+      user.password = newPass;
+      saveUsersDb(users);
+      showToast("Şifreniz güncellendi.");
+      showScreen("screen-auth");
+    }
+
+    async function handleLogout() {
+      if (hasUnsyncedChanges) {
+        await syncToFirebase();
+      }
+      currentUser = null;
+      userData = null;
+      document.getElementById("loginPassword").value = "";
+      showScreen("screen-auth");
+    }
+
+    function updateDashboardSummary() {
+      if (!currentUser || !userData) return;
+      document.getElementById("dashUsername").textContent = currentUser.username;
+      const avatarEl = document.getElementById("dashAvatar");
+      if (currentUser.avatar) {
+        avatarEl.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar" />`;
+      } else {
+        avatarEl.textContent = currentUser.username.charAt(0).toUpperCase();
+      }
+      const progCount = userData.programs.length;
+      const workoutCount = userData.workouts.length;
+      document.getElementById("dashStatsSummary").textContent = `${progCount} Program • ${workoutCount} Antrenman Kaydı`;
+    }
+
+    // ==================== PROFILE MODAL ====================
+    function openProfileModal() {
+      if (!currentUser) return;
+      document.getElementById("profUsername").value = currentUser.username;
+      document.getElementById("profPhone").value = currentUser.phone || "";
+      document.getElementById("profNewPassword").value = "";
+      document.getElementById("profAvatarInput").value = "";
+      document.getElementById("profileModal").classList.add("open");
+    }
+
+    async function saveProfileChanges() {
+      const users = getUsersDb();
+      const user = users[currentUser.username];
+      if (!user) return;
+
+      user.phone = document.getElementById("profPhone").value.trim();
+      const newPass = document.getElementById("profNewPassword").value;
+      if (newPass) user.password = newPass;
+
+      const file = document.getElementById("profAvatarInput").files[0];
+      if (file) {
+        user.avatar = await processAvatarImage(file);
+      }
+
+      saveUsersDb(users);
+      currentUser = user;
+      updateDashboardSummary();
+      closeModal("profileModal");
+      showToast("Profil bilgileri güncellendi.");
+    }
+
+    // ==================== PROGRAM MANAGEMENT & EXERCISE SEARCH ====================
+    function openProgramsScreen() {
+      // Kas Grubu Seç menüsü varsayılan olarak 'Hepsi' gelir
+      const groupSelect = document.getElementById("muscleGroupSelect");
+      groupSelect.value = "Hepsi";
+
+      renderProgramSelectOptions();
+      renderProgramExercises();
+      renderExerciseDropdownList();
+      showScreen("screen-programs");
+    }
+
+    function renderProgramSelectOptions() {
+      const sel = document.getElementById("programSelectManage");
+      const currentVal = sel.value;
+      sel.innerHTML = "";
+      userData.programs.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
+      if (currentVal && userData.programs.some(p => p.id === currentVal)) {
+        sel.value = currentVal;
+      }
+    }
+
+    function createNewProgram() {
+      const nameInput = document.getElementById("newProgramName");
+      const name = nameInput.value.trim();
+      if (!name) return showToast("Program adı girin.");
+
+      const newProg = {
+        id: "prog_" + Date.now(),
+        name,
+        exercises: []
+      };
+      userData.programs.push(newProg);
+      nameInput.value = "";
+      renderProgramSelectOptions();
+      document.getElementById("programSelectManage").value = newProg.id;
+      renderProgramExercises();
+      markDirty();
+      showToast(`"${name}" programı oluşturuldu.`);
+    }
+
+    function deleteSelectedProgram() {
+      const sel = document.getElementById("programSelectManage");
+      const progId = sel.value;
+      if (!progId) return;
+      if (userData.programs.length <= 1) {
+        return showToast("En az bir program bulunmalıdır.");
+      }
+      if (!confirm("Bu programı silmek istediğinize emin misiniz?")) return;
+
+      userData.programs = userData.programs.filter(p => p.id !== progId);
+      renderProgramSelectOptions();
+      renderProgramExercises();
+      markDirty();
+      showToast("Program silindi.");
+    }
+
+    function getFilteredExercises() {
+      const selectedGroup = document.getElementById("muscleGroupSelect").value;
+      const searchText = document.getElementById("exerciseSearchInput").value.trim().toLowerCase();
+
+      let pool = [];
+      if (selectedGroup === "Hepsi") {
+        Object.entries(EXERCISE_DATABASE).forEach(([groupName, list]) => {
+          list.forEach(exName => {
+            pool.push({ name: exName, group: groupName });
+          });
         });
-
-        window.addEventListener("online", () => {
-            if (hasUnsyncedChanges && currentUser) {
-                syncToCloud(true);
-            }
+      } else {
+        const list = EXERCISE_DATABASE[selectedGroup] || [];
+        list.forEach(exName => {
+          pool.push({ name: exName, group: selectedGroup });
         });
+      }
 
-        window.addEventListener("beforeunload", () => {
-            if (hasUnsyncedChanges && currentUser) {
-                syncToCloud(false);
-            }
+      if (searchText) {
+        pool = pool.filter(item => item.name.toLowerCase().includes(searchText));
+      }
+
+      return pool;
+    }
+
+    function renderExerciseDropdownList() {
+      const listEl = document.getElementById("exerciseDropdownList");
+      const clearBtn = document.getElementById("clearExerciseSearchBtn");
+      const inputVal = document.getElementById("exerciseSearchInput").value;
+
+      if (inputVal.length > 0) {
+        clearBtn.classList.add("visible");
+      } else {
+        clearBtn.classList.remove("visible");
+      }
+
+      const items = getFilteredExercises();
+      if (items.length === 0) {
+        listEl.innerHTML = `<div class="exercise-option" style="color:var(--text-muted); cursor:default;">Eşleşen hareket bulunamadı</div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map(item => `
+        <div class="exercise-option ${selectedExerciseName === item.name ? 'selected' : ''}" onclick="selectExerciseFromList('${item.name.replace(/'/g, "\\'")}')">
+          <span>${item.name}</span>
+          <span class="exercise-option-group">${item.group.split(" ")[0]}</span>
+        </div>
+      `).join("");
+    }
+
+    function openExerciseDropdown() {
+      renderExerciseDropdownList();
+      document.getElementById("exerciseDropdownList").classList.add("open");
+    }
+
+    function handleExerciseSearchInput() {
+      const val = document.getElementById("exerciseSearchInput").value;
+      selectedExerciseName = val.trim();
+      renderExerciseDropdownList();
+      document.getElementById("exerciseDropdownList").classList.add("open");
+    }
+
+    // Kas grubu değiştiğinde arama kutusundaki metin SİLİNMEZ, korunur
+    function handleMuscleGroupChange() {
+      renderExerciseDropdownList();
+    }
+
+    function clearExerciseSearch() {
+      const input = document.getElementById("exerciseSearchInput");
+      input.value = "";
+      selectedExerciseName = "";
+      renderExerciseDropdownList();
+      input.focus();
+    }
+
+    function selectExerciseFromList(name) {
+      selectedExerciseName = name;
+      document.getElementById("exerciseSearchInput").value = name;
+      document.getElementById("clearExerciseSearchBtn").classList.add("visible");
+      document.getElementById("exerciseDropdownList").classList.remove("open");
+    }
+
+    // Dışarı tıklanınca egzersiz açılır listesini kapat
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("exerciseSearchWrapper");
+      if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById("exerciseDropdownList").classList.remove("open");
+      }
+    });
+
+    function addExerciseToProgram() {
+      const progId = document.getElementById("programSelectManage").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      if (!prog) return showToast("Önce bir program seçin.");
+
+      const exName = document.getElementById("exerciseSearchInput").value.trim();
+      if (!exName) return showToast("Lütfen bir egzersiz seçin veya adını yazın.");
+
+      const exists = prog.exercises.some(e => e.name.toLowerCase() === exName.toLowerCase());
+      if (exists) {
+        return showToast("Bu hareket seçili programda zaten mevcut!");
+      }
+
+      const sets = parseInt(document.getElementById("targetSetsInput").value, 10) || 4;
+      const bodyweight = document.getElementById("isBodyweightCheckbox").checked;
+
+      prog.exercises.push({ name: exName, sets, bodyweight });
+      renderProgramExercises();
+      markDirty();
+      showToast(`"${exName}" programa eklendi.`);
+    }
+
+    function renderProgramExercises() {
+      const progId = document.getElementById("programSelectManage").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      const container = document.getElementById("programExercisesList");
+      const countBadge = document.getElementById("programExerciseCount");
+
+      if (!prog || prog.exercises.length === 0) {
+        countBadge.textContent = "0 Hareket";
+        container.innerHTML = `<div class="empty-state">Bu programda henüz hareket yok.</div>`;
+        return;
+      }
+
+      countBadge.textContent = `${prog.exercises.length} Hareket`;
+      container.innerHTML = prog.exercises.map((ex, idx) => `
+        <div class="list-item">
+          <div class="list-item-info">
+            <h4>${idx + 1}. ${ex.name}</h4>
+            <p>
+              <span class="badge">${ex.sets} Set</span>
+              ${ex.bodyweight ? '<span class="badge badge-bw">Vücut Ağırlığı</span>' : '<span class="badge">Ağırlıklı</span>'}
+            </p>
+          </div>
+          <div class="flex-row">
+            <button class="btn btn-secondary btn-sm" onclick="openEditProgramExerciseModal(${idx})">Düzenle</button>
+            <button class="btn btn-danger btn-sm" onclick="removeExerciseFromProgram(${idx})">Sil</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function openEditProgramExerciseModal(index) {
+      const progId = document.getElementById("programSelectManage").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      if (!prog || !prog.exercises[index]) return;
+
+      const ex = prog.exercises[index];
+      document.getElementById("editProgExIndex").value = index;
+      document.getElementById("editProgExName").value = ex.name;
+      document.getElementById("editProgExSets").value = ex.sets;
+      document.getElementById("editProgExBw").checked = !!ex.bodyweight;
+      document.getElementById("editProgExModal").classList.add("open");
+    }
+
+    function saveEditedProgramExercise() {
+      const progId = document.getElementById("programSelectManage").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      const index = parseInt(document.getElementById("editProgExIndex").value, 10);
+      if (!prog || !prog.exercises[index]) return;
+
+      prog.exercises[index].sets = parseInt(document.getElementById("editProgExSets").value, 10) || 3;
+      prog.exercises[index].bodyweight = document.getElementById("editProgExBw").checked;
+
+      renderProgramExercises();
+      markDirty();
+      closeModal("editProgExModal");
+      showToast("Hareket ayarları güncellendi.");
+    }
+
+    function removeExerciseFromProgram(index) {
+      const progId = document.getElementById("programSelectManage").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      if (!prog) return;
+
+      prog.exercises.splice(index, 1);
+      renderProgramExercises();
+      markDirty();
+      showToast("Hareket programdan çıkarıldı.");
+    }
+
+    // ==================== WORKOUT LOGGING ====================
+    function openWorkoutScreen() {
+      const today = getTodayStr();
+      const dateInput = document.getElementById("workoutDateInput");
+      dateInput.max = today;
+      if (!dateInput.value) dateInput.value = today;
+
+      const progSel = document.getElementById("workoutProgramSelect");
+      progSel.innerHTML = "";
+      userData.programs.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        progSel.appendChild(opt);
+      });
+
+      onWorkoutProgramChange();
+      showScreen("screen-workout");
+    }
+
+    function validateWorkoutDate() {
+      const today = getTodayStr();
+      const input = document.getElementById("workoutDateInput");
+      if (input.value > today) {
+        input.value = today;
+        showToast("Gelecek bir tarih seçilemez!");
+      }
+    }
+
+    function onWorkoutProgramChange() {
+      const progId = document.getElementById("workoutProgramSelect").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      const exSel = document.getElementById("workoutExerciseSelect");
+      exSel.innerHTML = "";
+
+      if (!prog || prog.exercises.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Programda hareket bulunmuyor";
+        exSel.appendChild(opt);
+        document.getElementById("setsContainer").innerHTML = `<div class="empty-state">Önce Program Düzenle menüsünden hareket ekleyin.</div>`;
+        renderRecentWorkoutHistory();
+        return;
+      }
+
+      prog.exercises.forEach(ex => {
+        const opt = document.createElement("option");
+        opt.value = ex.name;
+        opt.textContent = ex.name;
+        exSel.appendChild(opt);
+      });
+
+      loadWorkoutExerciseDetails();
+      renderRecentWorkoutHistory();
+    }
+
+    function loadWorkoutExerciseDetails() {
+      const progId = document.getElementById("workoutProgramSelect").value;
+      const exName = document.getElementById("workoutExerciseSelect").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      const container = document.getElementById("setsContainer");
+
+      if (!prog || !exName) {
+        container.innerHTML = "";
+        return;
+      }
+
+      const exObj = prog.exercises.find(e => e.name === exName) || { sets: 4, bodyweight: false };
+      document.getElementById("currentExerciseTitle").textContent = `${exName} (${exObj.sets} Set)`;
+
+      // Kullanıcının bu hareketteki son kaydını referans olarak bul
+      const pastLogs = userData.workouts
+        .filter(w => w.exercise === exName)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      const lastSets = pastLogs.length > 0 ? pastLogs[0].sets : [];
+
+      container.innerHTML = "";
+      for (let i = 0; i < exObj.sets; i++) {
+        const prev = lastSets[i] || { weight: "", reps: "" };
+        appendSetRowElement(container, i + 1, exObj.bodyweight, prev.weight, prev.reps);
+      }
+    }
+
+    function appendSetRowElement(container, setNum, isBodyweight, weightVal = "", repsVal = "") {
+      const row = document.createElement("div");
+      row.className = "set-row" + (isBodyweight ? " bodyweight-mode" : "");
+      row.innerHTML = `
+        <div class="set-number">${setNum}. Set</div>
+        ${isBodyweight ? "" : `<input type="number" step="0.5" class="form-control set-weight" placeholder="Kg" value="${weightVal}" />`}
+        <input type="number" class="form-control set-reps" placeholder="Tekrar / Süre" value="${repsVal}" />
+        <button type="button" class="btn btn-danger btn-icon-only" title="Seti Sil" onclick="removeSetRow(this)">✕</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function addSetRow() {
+      const progId = document.getElementById("workoutProgramSelect").value;
+      const exName = document.getElementById("workoutExerciseSelect").value;
+      const prog = userData.programs.find(p => p.id === progId);
+      if (!prog || !exName) return;
+
+      const exObj = prog.exercises.find(e => e.name === exName) || { bodyweight: false };
+      const container = document.getElementById("setsContainer");
+      const nextNum = container.querySelectorAll(".set-row").length + 1;
+      appendSetRowElement(container, nextNum, exObj.bodyweight);
+    }
+
+    function removeSetRow(btn) {
+      const container = btn.parentElement.parentElement;
+      btn.parentElement.remove();
+      container.querySelectorAll(".set-row").forEach((row, idx) => {
+        row.querySelector(".set-number").textContent = `${idx + 1}. Set`;
+      });
+    }
+
+    function saveWorkoutLog() {
+      const date = document.getElementById("workoutDateInput").value;
+      const progId = document.getElementById("workoutProgramSelect").value;
+      const exName = document.getElementById("workoutExerciseSelect").value;
+      const prog = userData.programs.find(p => p.id === progId);
+
+      if (!date || !prog || !exName) {
+        return showToast("Tarih, program ve hareket seçimi zorunludur.");
+      }
+
+      const exObj = prog.exercises.find(e => e.name === exName) || { bodyweight: false };
+      const rows = document.querySelectorAll("#setsContainer .set-row");
+      const setsData = [];
+
+      rows.forEach((row) => {
+        const repsInput = row.querySelector(".set-reps");
+        const weightInput = row.querySelector(".set-weight");
+        const reps = repsInput ? parseFloat(repsInput.value) : 0;
+        const weight = weightInput ? parseFloat(weightInput.value) : 0;
+        if (reps > 0 || weight > 0) {
+          setsData.push({
+            weight: exObj.bodyweight ? 0 : (weight || 0),
+            reps: reps || 0
+          });
+        }
+      });
+
+      if (setsData.length === 0) {
+        return showToast("En az bir geçerli set değeri girin.");
+      }
+
+      const existingIdx = userData.workouts.findIndex(
+        w => w.date === date && w.programId === progId && w.exercise === exName
+      );
+
+      if (existingIdx !== -1) {
+        if (!confirm("Bu tarih, program ve hareket için zaten bir kayıt var. Üzerine yazılsın mı?")) {
+          return;
+        }
+        userData.workouts[existingIdx].sets = setsData;
+        userData.workouts[existingIdx].bodyweight = !!exObj.bodyweight;
+      } else {
+        userData.workouts.push({
+          id: "w_" + Date.now(),
+          date,
+          programId: progId,
+          programName: prog.name,
+          exercise: exName,
+          bodyweight: !!exObj.bodyweight,
+          sets: setsData
         });
-
-        function updateSyncIndicator() {
-            const indicator = document.getElementById("globalSyncIndicator");
-            const label = document.getElementById("globalSyncLabel");
-            if (!indicator || !label) return;
-
-            indicator.classList.remove("unsynced", "syncing");
-            if (isSyncingNow) {
-                indicator.classList.add("syncing");
-                label.innerText = "Senkronize Ediliyor...";
-            } else if (hasUnsyncedChanges) {
-                indicator.classList.add("unsynced");
-                label.innerText = "Senkronize Bekliyor";
-            } else {
-                label.innerText = "Senkronize";
-            }
-        }
-
-        function markDirty() {
-            hasUnsyncedChanges = true;
-            updateSyncIndicator();
-        }
-
-        function markClean() {
-            hasUnsyncedChanges = false;
-            updateSyncIndicator();
-        }
-
-        function manualSyncClick() {
-            if (!currentUser) {
-                showToast("Önce giriş yapmalısınız.", "warning");
-                return;
-            }
-            syncToCloud(true);
-        }
-
-        // BULUT SENKRONİZASYONU (FIRESTORE)
-        async function syncToCloud(showNotification = false) {
-            if (!currentUser) return;
-            if (!window.fbReady || !window.fbDb) {
-                if (showNotification) showToast("Bulut bağlantısı çevrimdışı, veriler telefon hafızasında tutuldu.", "warning");
-                return;
-            }
-            if (!navigator.onLine) {
-                if (showNotification) showToast("İnternet bağlantısı yok. Çevrimiçi olunca otomatik senkronize edilecek.", "warning");
-                return;
-            }
-
-            isSyncingNow = true;
-            updateSyncIndicator();
-
-            try {
-                const usersDb = getUsersDB();
-                const userProfile = usersDb[currentUser] || {};
-                const userData = getUserData(currentUser);
-
-                const payload = {
-                    username: currentUser,
-                    profile: userProfile,
-                    programs: userData.programs || [],
-                    history: userData.history || [],
-                    health: userData.health || [],
-                    updatedAt: new Date().toISOString()
-                };
-
-                const userRef = window.fbDoc(window.fbDb, "fitness_users", currentUser);
-                await window.fbSetDoc(userRef, payload, { merge: true });
-
-                isSyncingNow = false;
-                markClean();
-                if (showNotification) {
-                    showToast("Tüm veriler buluta başarıyla senkronize edildi!", "info");
-                }
-            } catch (err) {
-                console.error("Cloud sync failed:", err);
-                isSyncingNow = false;
-                updateSyncIndicator();
-                if (showNotification) {
-                    showToast("Senkronizasyon hatası! Veriler yerel hafızada tutuldu.", "error");
-                }
-            }
-        }
-
-        async function pullAllUsersFromCloud() {
-            if (!window.fbReady || !window.fbDb || !navigator.onLine) return;
-            try {
-                const colRef = window.fbCollection(window.fbDb, "fitness_users");
-                const snapshot = await window.fbGetDocs(colRef);
-                const localUsers = getUsersDB();
-                let changed = false;
-
-                snapshot.forEach(docSnap => {
-                    const uname = docSnap.id;
-                    const data = docSnap.data();
-                    if (data && data.profile) {
-                        localUsers[uname] = data.profile;
-                        changed = true;
-                    }
-                    if (data && (data.programs || data.history || data.health)) {
-                        const existingLocal = getUserData(uname);
-                        if (!hasUnsyncedChanges || uname !== currentUser) {
-                            localStorage.setItem(`fbr_user_${uname}`, JSON.stringify({
-                                programs: data.programs || existingLocal.programs || [],
-                                history: data.history || existingLocal.history || [],
-                                health: data.health || existingLocal.health || []
-                            }));
-                        }
-                    }
-                });
-
-                if (changed) {
-                    localStorage.setItem("fbr_users_db", JSON.stringify(localUsers));
-                }
-            } catch (err) {
-                console.error("Cloud fetch users error:", err);
-            }
-        }
-
-        async function pullUserDataFromCloud(username) {
-            if (!window.fbReady || !window.fbDb || !navigator.onLine) return false;
-            try {
-                const userRef = window.fbDoc(window.fbDb, "fitness_users", username);
-                const snap = await window.fbGetDoc(userRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    if (data.profile) {
-                        const usersDb = getUsersDB();
-                        usersDb[username] = data.profile;
-                        localStorage.setItem("fbr_users_db", JSON.stringify(usersDb));
-                    }
-                    const cloudUserData = {
-                        programs: Array.isArray(data.programs) ? data.programs : [],
-                        history: Array.isArray(data.history) ? data.history : [],
-                        health: Array.isArray(data.health) ? data.health : []
-                    };
-                    localStorage.setItem(`fbr_user_${username}`, JSON.stringify(cloudUserData));
-                    markClean();
-                    return true;
-                }
-            } catch (err) {
-                console.error("Pull user data error:", err);
-            }
-            return false;
-        }
-
-        function showToast(msg, type = "info") {
-            const container = document.getElementById("toastContainer");
-            const toast = document.createElement("div");
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer;margin-left:8px;">✕</button>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        function getTodayStr() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function setTodayDates() {
-            const today = getTodayStr();
-            const wInput = document.getElementById("workoutDateInput");
-            const hInput = document.getElementById("healthDateInput");
-            const eInput = document.getElementById("editHistoryDateInput");
-            if (wInput) { wInput.value = today; wInput.max = today; }
-            if (hInput) { hInput.value = today; hInput.max = today; }
-            if (eInput) { eInput.max = today; }
-        }
-
-        function validateWorkoutDate(input) {
-            const today = getTodayStr();
-            if (input.value > today) {
-                showToast("Hata: Güncel tarihin ilerisinde bir antrenman tarihi seçilemez!", "error");
-                input.value = today;
-            }
-        }
-
-        // MENÜDEN ÇIKARKEN POP-UP OLMADAN OTOMATİK SENKRONİZASYON
-        function navigateTo(viewId) {
-            if (currentUser && hasUnsyncedChanges) {
-                syncToCloud(false);
-            }
-            document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-            document.getElementById(viewId).classList.add("active");
-            if (viewId === 'viewWorkoutMenu') renderProgramList();
-            if (viewId === 'viewReports') renderReports();
-            if (viewId === 'viewHealthInput') {
-                setTodayDates();
-                loadHealthFormForDate(document.getElementById("healthDateInput").value);
-            }
-            if (viewId === 'viewHealthCharts') {
-                document.getElementById("healthChartResultCard").style.display = "none";
-            }
-        }
-
-        function refreshCurrentView() {
-            const activeView = document.querySelector(".view.active");
-            if (!activeView) return;
-            if (activeView.id === 'viewWorkoutMenu') renderProgramList();
-            if (activeView.id === 'viewWorkoutDetail' && selectedProgramId) renderWorkoutExercises();
-            if (activeView.id === 'viewReports') renderReports();
-            if (activeView.id === 'viewHealthInput') loadHealthFormForDate(document.getElementById("healthDateInput").value);
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = "none";
-        }
-
-        function closeModalAndAutoSync(modalId) {
-            closeModal(modalId);
-            if (currentUser && hasUnsyncedChanges) {
-                syncToCloud(false);
-            }
-        }
-
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = "flex";
-        }
-
-        function getUsersDB() { return JSON.parse(localStorage.getItem("fbr_users_db") || "{}"); }
-        function saveUsersDB(db) {
-            localStorage.setItem("fbr_users_db", JSON.stringify(db));
-            if (currentUser) markDirty();
-        }
-        function getUserData(username) {
-            const raw = JSON.parse(localStorage.getItem(`fbr_user_${username}`) || "{}");
-            return {
-                programs: Array.isArray(raw.programs) ? raw.programs : [],
-                history: Array.isArray(raw.history) ? raw.history : [],
-                health: Array.isArray(raw.health) ? raw.health : []
-            };
-        }
-        function saveUserData(username, data) {
-            localStorage.setItem(`fbr_user_${username}`, JSON.stringify(data));
-            if (currentUser) markDirty();
-        }
-
-        function isValidTurkishPhone(phone) {
-            const regex = /^(\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}$/;
-            return regex.test(phone.trim());
-        }
-
-        function sanitizeDecimalInput(input) {
-            input.value = input.value.replace(/,/g, '.');
-        }
-
-        function initDefaultUser() {
-            const db = getUsersDB();
-            if (!db["Yavuz"]) {
-                db["Yavuz"] = { 
-                    password: "1234", email: "yavuz@deniz.com", phone: "+90 532 100 00 00", gender: "Erkek", age: 45, 
-                    secQuestion: "En sevdiğin spor?", secAnswer: "fitness", avatar: "" 
-                };
-                localStorage.setItem("fbr_users_db", JSON.stringify(db));
-
-                const yavuzData = {
-                    programs: [{ id: "p1", name: "Göğüs & Ön Kol", exercises: [{ name: "Barbell Bench Press", weighted: true }, { name: "Barbell Biceps Curl", weighted: true }] }],
-                    history: [],
-                    health: []
-                };
-                localStorage.setItem("fbr_user_Yavuz", JSON.stringify(yavuzData));
-            }
-        }
-
-        function populateLoginUserDropdown() {
-            const db = getUsersDB();
-            const select = document.getElementById("loginUserSelect");
-            const prevVal = select.value;
-            select.innerHTML = '<option value="">-- Sporcu Seçin --</option>';
-            Object.keys(db).forEach(u => {
-                select.innerHTML += `<option value="${u}">${u}</option>`;
-            });
-            if (prevVal && db[prevVal]) select.value = prevVal;
-        }
-
-        async function handleLogin() {
-            const username = document.getElementById("loginUserSelect").value;
-            const pass = document.getElementById("loginPassword").value;
-
-            if (!username) return showToast("Lütfen bir sporcu seçin", "warning");
-
-            await pullUserDataFromCloud(username);
-
-            const db = getUsersDB();
-            if (db[username] && db[username].password === pass) {
-                currentUser = username;
-                document.getElementById("userNameHeader").innerText = currentUser;
-                document.getElementById("userAvatarHeader").src = db[username].avatar || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231c273e'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%2300ff88'>👤</text></svg>";
-                
-                const cloudExists = await pullUserDataFromCloud(username);
-                if (!cloudExists) {
-                    await syncToCloud(false);
-                } else {
-                    markClean();
-                }
-
-                showToast(`Hoş geldin, ${currentUser}!`, "info");
-                navigateTo("viewPage2");
-            } else {
-                showToast("Hatalı şifre veya kullanıcı!", "error");
-            }
-        }
-
-        async function handleLogout() {
-            if (currentUser && hasUnsyncedChanges) {
-                await syncToCloud(false);
-            }
-            currentUser = null;
-            markClean();
-            document.getElementById("loginPassword").value = "";
-            navigateTo("viewPage1");
-        }
-
-        // REGISTER
-        function showRegisterModal() { openModal("modalRegister"); }
-
-        function handleAvatarSelect(evt) {
-            const file = evt.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = 200; canvas.height = 200;
-                        const ctx = canvas.getContext("2d");
-                        const min = Math.min(img.width, img.height);
-                        ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200);
-                        regAvatarBase64 = canvas.toDataURL("image/jpeg", 0.85);
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function submitRegistration() {
-            const u = document.getElementById("regUsername").value.trim();
-            const p = document.getElementById("regPassword").value.trim();
-            const e = document.getElementById("regEmail").value.trim();
-            const ph = document.getElementById("regPhone").value.trim();
-            const g = document.getElementById("regGender").value;
-            const a = document.getElementById("regAge").value;
-            const q = document.getElementById("regSecQuestion").value.trim();
-            const ans = document.getElementById("regSecAnswer").value.trim();
-
-            if (!u || !p || !e || !ph || !a || !q || !ans) {
-                return showToast("Lütfen tüm zorunlu (*) alanları doldurun!", "warning");
-            }
-
-            if (!isValidTurkishPhone(ph)) {
-                return showToast("Hata: Telefon numarası geçersiz! Lütfen (+90 532 100 00 00) formatında giriniz.", "error");
-            }
-
-            const db = getUsersDB();
-            if (db[u]) return showToast("Bu kullanıcı adı zaten mevcut!", "error");
-
-            db[u] = { password: p, email: e, phone: ph, gender: g, age: a, secQuestion: q, secAnswer: ans.toLowerCase(), avatar: regAvatarBase64 };
-            saveUsersDB(db);
-            saveUserData(u, { programs: [], history: [], health: [] });
-
-            if (window.fbReady && window.fbDb && navigator.onLine) {
-                try {
-                    const userRef = window.fbDoc(window.fbDb, "fitness_users", u);
-                    await window.fbSetDoc(userRef, {
-                        username: u,
-                        profile: db[u],
-                        programs: [],
-                        history: [],
-                        health: [],
-                        updatedAt: new Date().toISOString()
-                    });
-                } catch (err) {
-                    console.error("Cloud register sync error:", err);
-                }
-            }
-
-            populateLoginUserDropdown();
-            closeModal("modalRegister");
-            showToast("Sporcu kaydı başarıyla oluşturuldu!", "info");
-        }
-
-        // FORGOT PASSWORD
-        let targetForgotUser = null;
-
-        function openForgotPasswordModal() {
-            document.getElementById("forgotStep1").style.display = "block";
-            document.getElementById("forgotStep2").style.display = "none";
-            document.getElementById("forgotIdentityInput").value = "";
-            openModal("modalForgotPassword");
-        }
-
-        function verifyForgotIdentity() {
-            const input = document.getElementById("forgotIdentityInput").value.trim();
-            if (!input) return showToast("E-Posta veya Telefon giriniz!", "warning");
-
-            const db = getUsersDB();
-            targetForgotUser = null;
-
-            Object.keys(db).forEach(u => {
-                if (db[u].email === input || db[u].phone === input) targetForgotUser = u;
-            });
-
-            if (targetForgotUser) {
-                const uData = db[targetForgotUser];
-                document.getElementById("forgotQuestionText").innerText = `Soru: "${uData.secQuestion}"`;
-                document.getElementById("forgotStep1").style.display = "none";
-                document.getElementById("forgotStep2").style.display = "block";
-            } else {
-                showToast("Bu bilgilere ait bir kullanıcı bulunamadı!", "error");
-            }
-        }
-
-        function verifyForgotAnswer() {
-            const ans = document.getElementById("forgotAnswerInput").value.trim().toLowerCase();
-            const db = getUsersDB();
-            const uData = db[targetForgotUser];
-
-            if (ans && ans === uData.secAnswer) {
-                alert(`Doğrulama Başarılı!\nKullanıcı Şifreniz: ${uData.password}`);
-                closeModal("modalForgotPassword");
-            } else {
-                alert("Girdiğiniz cevap hatalı. Lütfen tekrar deneyiniz veya sistem yöneticisi Yavuz Deniz ile iletişime geçiniz.");
-            }
-        }
-
-        // PROFILE UPDATE
-        function openProfileUpdateModal() {
-            const db = getUsersDB();
-            const uData = db[currentUser];
-            document.getElementById("editEmail").value = uData.email || "";
-            document.getElementById("editPhone").value = uData.phone || "";
-            document.getElementById("editPassword").value = "";
-            openModal("modalProfileUpdate");
-        }
-
-        function saveProfileUpdate() {
-            const db = getUsersDB();
-            const uData = db[currentUser];
-            const newPhone = document.getElementById("editPhone").value.trim();
-
-            if (newPhone && !isValidTurkishPhone(newPhone)) {
-                return showToast("Geçersiz telefon formatı! (+90 5XX...)", "error");
-            }
-
-            uData.email = document.getElementById("editEmail").value.trim();
-            if (newPhone) uData.phone = newPhone;
-            const newPass = document.getElementById("editPassword").value.trim();
-            if (newPass) uData.password = newPass;
-
-            saveUsersDB(db);
-            closeModalAndAutoSync("modalProfileUpdate");
-            showToast("Profil güncellendi!", "info");
-        }
-
-        // HAREKET GÖRSELİ GÖSTERME (GITHUB REPO İÇERİSİNDEN [Hareket Adı].png)
-        function openExerciseImageModal(exName) {
-            if (!exName) return;
-            document.getElementById("exerciseImageModalTitle").innerText = exName;
-            const container = document.getElementById("exerciseImageContainer");
-            container.innerHTML = "";
-
-            const img = document.createElement("img");
-            const encodedName = encodeURIComponent(exName);
-            img.src = encodedName + ".png";
-            img.alt = exName;
-            img.onerror = function() {
-                container.innerHTML = "";
-            };
-            container.appendChild(img);
-            openModal("modalExerciseImage");
-        }
-
-        function openSelectedExerciseImageModal() {
-            if (!selectedAddExerciseName) return;
-            openExerciseImageModal(selectedAddExerciseName);
-        }
-
-        // PROGRAM BAZLI GEÇMİŞ FİLTRELEME (PROGRAM + KULLANICI İZOLASYONU)
-        function isRecordForProgram(h, prog, uData) {
-            if (h.userName && h.userName !== currentUser) return false;
-            if (h.programId) {
-                return h.programId === prog.id;
-            }
-            if (h.programName) {
-                return h.programName === prog.name;
-            }
-            return uData.programs.length > 0 && uData.programs[0].id === prog.id;
-        }
-
-        // WORKOUT & SETS LOGIC
-        function renderProgramList() {
-            const uData = getUserData(currentUser);
-            const container = document.getElementById("programListContainer");
-            container.innerHTML = "";
-
-            if (uData.programs.length === 0) {
-                container.innerHTML = '<p>Henüz tanımlı antrenman programı yok. "Program Düzenle" menüsünden oluşturabilirsiniz.</p>';
-                return;
-            }
-
-            uData.programs.forEach(p => {
-                const card = document.createElement("div");
-                card.className = "card";
-                card.style.cursor = "pointer";
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;" onclick="openProgramDetail('${p.id}')">
-                        <div>
-                            <h3 style="color:var(--primary);">${p.name}</h3>
-                            <p>${p.exercises.length} Egzersiz</p>
-                        </div>
-                        <button class="btn btn-secondary" style="font-size:12px; padding:6px 12px;">Başla ➔</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function openProgramDetail(progId) {
-            selectedProgramId = progId;
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === progId);
-            document.getElementById("workoutDetailTitle").innerText = prog.name;
-            setTodayDates();
-            renderWorkoutExercises();
-            navigateTo("viewWorkoutDetail");
-        }
-
-        function sortHistoryByWorkoutDateDesc(records) {
-            return [...records].sort((a, b) => {
-                if (b.date !== a.date) {
-                    return b.date.localeCompare(a.date);
-                }
-                return String(b.id).localeCompare(String(a.id));
-            });
-        }
-
-        function renderWorkoutExercises() {
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-            const container = document.getElementById("exercisesContainer");
-            container.innerHTML = "";
-
-            if (!prog) return;
-
-            prog.exercises.forEach((ex, exIdx) => {
-                const card = document.createElement("div");
-                card.className = "card";
-
-                const sortedHistory = sortHistoryByWorkoutDateDesc(
-                    uData.history.filter(h => h.exerciseName === ex.name && isRecordForProgram(h, prog, uData))
-                ).slice(0, 5);
-
-                let historyHtml = "";
-                if (sortedHistory.length > 0) {
-                    sortedHistory.forEach(h => {
-                        const setDokum = h.sets.map(s => `${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}t`).join(', ');
-                        historyHtml += `
-                            <div class="history-row">
-                                <span style="font-size:12px; flex:1;">📅 ${h.date}: ${setDokum}</span>
-                                <div style="display:flex; gap:4px;">
-                                    <button class="btn btn-secondary" style="font-size:10px; padding:4px 7px;" onclick="openEditHistoryModal('${h.id}')" title="Düzelt">✏️</button>
-                                    <button class="btn btn-danger" style="font-size:10px; padding:4px 7px;" onclick="deleteHistoryEntry('${h.id}')" title="Sil">🗑️</button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    historyHtml = "<span>Bu programda bu hareket için geçmiş kayıt bulunamadı.</span>";
-                }
-
-                const safeExName = ex.name.replace(/'/g, "\\'");
-
-                card.innerHTML = `
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-                        <h3 style="font-size:16px; color:var(--primary); margin:0;">${ex.name}</h3>
-                        <button type="button" class="btn-info-q" onclick="openExerciseImageModal('${safeExName}')" title="Hareket Nasıl Yapılır?">?</button>
-                    </div>
-
-                    <table class="set-table" id="setTable_${exIdx}">
-                        <thead>
-                            <tr>
-                                <th>Set</th>
-                                ${ex.weighted ? '<th>Ağırlık (kg)</th>' : ''}
-                                <th>Tekrar</th>
-                                <th>İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody id="setTbody_${exIdx}"></tbody>
-                    </table>
-
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button class="btn btn-secondary" style="flex:1; font-size:12px; padding:8px;" onclick="addSetRow(${exIdx}, '${safeExName}', ${ex.weighted})">+ Set Ekle</button>
-                        <button class="btn" style="flex:1; font-size:12px; padding:8px;" onclick="saveExerciseSets(${exIdx}, '${safeExName}', ${ex.weighted})">Seti Kaydet</button>
-                    </div>
-
-                    <div class="last-record-badge">
-                        <strong style="display:block; margin-bottom:4px; color:var(--secondary);">Son Kaydedilen Setler (${prog.name} - Son 5):</strong>
-                        ${historyHtml}
-                    </div>
-                `;
-                container.appendChild(card);
-                addSetRow(exIdx, ex.name, ex.weighted);
-            });
-        }
-
-        // GEÇMİŞ KAYIT DÜZENLEME
-        let editingHistoryId = null;
-        let editingHistoryWeighted = true;
-
-        function openEditHistoryModal(historyId) {
-            editingHistoryId = historyId;
-            const uData = getUserData(currentUser);
-            const entry = uData.history.find(h => h.id === historyId);
-            if (!entry) return;
-
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-            const exDef = prog ? prog.exercises.find(e => e.name === entry.exerciseName) : null;
-            editingHistoryWeighted = exDef ? exDef.weighted : entry.sets.some(s => s.weight > 0);
-
-            document.getElementById("editHistoryMeta").innerText = `${prog ? prog.name + ' • ' : ''}${entry.exerciseName}`;
-            const dateInput = document.getElementById("editHistoryDateInput");
-            dateInput.value = entry.date;
-            dateInput.max = getTodayStr();
-
-            const container = document.getElementById("editHistorySetsContainer");
-            container.innerHTML = "";
-
-            entry.sets.forEach((s, sIdx) => {
-                appendEditHistoryRow(sIdx + 1, s.weight, s.reps);
-            });
-
-            openModal("modalEditHistory");
-        }
-
-        function appendEditHistoryRow(setNum, weightVal = "", repsVal = "") {
-            const container = document.getElementById("editHistorySetsContainer");
-            const row = document.createElement("div");
-            row.style.cssText = "display:flex; gap:8px; align-items:center;";
-            row.innerHTML = `
-                <span class="edit-set-num" style="font-size:13px; width:46px; font-weight:700;">Set #${setNum}</span>
-                ${editingHistoryWeighted ? `<input type="text" class="edit-set-weight" value="${weightVal}" placeholder="kg" oninput="sanitizeDecimalInput(this)" style="flex:1;">` : ''}
-                <input type="number" class="edit-set-reps" value="${repsVal}" placeholder="tekrar" style="flex:1;">
-                <button class="btn btn-danger btn-icon" style="width:26px; height:26px; font-size:11px;" onclick="removeEditHistoryRow(this)">✕</button>
-            `;
-            container.appendChild(row);
-        }
-
-        function addRowToEditHistory() {
-            const container = document.getElementById("editHistorySetsContainer");
-            const count = container.children.length;
-            let lastW = "";
-            let lastR = "";
-            if (count > 0) {
-                const lastRow = container.children[count - 1];
-                const wEl = lastRow.querySelector(".edit-set-weight");
-                const rEl = lastRow.querySelector(".edit-set-reps");
-                if (wEl) lastW = wEl.value;
-                if (rEl) lastR = rEl.value;
-            }
-            appendEditHistoryRow(count + 1, lastW, lastR);
-        }
-
-        function removeEditHistoryRow(btn) {
-            btn.closest("div").remove();
-            const rows = document.querySelectorAll("#editHistorySetsContainer > div");
-            rows.forEach((r, idx) => {
-                r.querySelector(".edit-set-num").innerText = `Set #${idx + 1}`;
-            });
-        }
-
-        async function saveEditedHistory() {
-            const uData = getUserData(currentUser);
-            const entry = uData.history.find(h => h.id === editingHistoryId);
-            if (!entry) return;
-
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-            const newDate = document.getElementById("editHistoryDateInput").value;
-            const today = getTodayStr();
-            if (!newDate) return showToast("Lütfen geçerli bir tarih seçin!", "warning");
-            if (newDate > today) return showToast("Hata: Gelecek bir tarih girilemez!", "error");
-
-            const duplicateDate = uData.history.some(h => 
-                h.id !== editingHistoryId && 
-                h.exerciseName === entry.exerciseName && 
-                h.date === newDate &&
-                (prog ? isRecordForProgram(h, prog, uData) : true)
-            );
-            if (duplicateDate) {
-                return showToast("Hata: Bu programda bu tarihte bu hareket için zaten başka bir kayıt mevcut!", "error");
-            }
-
-            const rows = document.querySelectorAll("#editHistorySetsContainer > div");
-            if (rows.length === 0) return showToast("En az 1 set olmalıdır!", "warning");
-
-            const newSets = [];
-            for (let row of rows) {
-                const wInput = row.querySelector(".edit-set-weight");
-                const rInput = row.querySelector(".edit-set-reps");
-                const w = editingHistoryWeighted ? parseFloat(wInput ? wInput.value : 0) : 0;
-                const r = parseFloat(rInput ? rInput.value : 0);
-
-                if (!r || r <= 0 || (editingHistoryWeighted && (!w || w <= 0))) {
-                    return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
-                }
-                newSets.push({ weight: w, reps: r });
-            }
-
-            entry.date = newDate;
-            entry.sets = newSets;
-            if (prog) {
-                entry.programId = prog.id;
-                entry.programName = prog.name;
-            }
-            entry.userName = currentUser;
-
-            saveUserData(currentUser, uData);
-            closeModal("modalEditHistory");
-            renderWorkoutExercises();
-            showToast("Geçmiş set kaydı güncellendi!", "info");
-            await syncToCloud(false);
-        }
-
-        function addSetRow(exIdx, exName, isWeighted) {
-            const tbody = document.getElementById(`setTbody_${exIdx}`);
-            const rowCount = tbody.children.length;
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-
-            let defWeight = "";
-            let defReps = "";
-
-            if (rowCount === 0 && prog) {
-                const sortedHistory = sortHistoryByWorkoutDateDesc(
-                    uData.history.filter(h => h.exerciseName === exName && isRecordForProgram(h, prog, uData))
-                );
-                if (sortedHistory.length > 0 && sortedHistory[0].sets && sortedHistory[0].sets[0]) {
-                    defWeight = sortedHistory[0].sets[0].weight || "";
-                    defReps = sortedHistory[0].sets[0].reps || "";
-                }
-            } else if (rowCount > 0) {
-                const lastRow = tbody.children[rowCount - 1];
-                const wInput = lastRow.querySelector('.input-weight');
-                const rInput = lastRow.querySelector('.input-reps');
-                if (wInput) defWeight = wInput.value;
-                if (rInput) defReps = rInput.value;
-            }
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><strong>#${rowCount + 1}</strong></td>
-                ${isWeighted ? `<td><input type="text" class="input-weight" value="${defWeight}" placeholder="kg" oninput="sanitizeDecimalInput(this)"></td>` : ''}
-                <td><input type="number" class="input-reps" value="${defReps}" placeholder="tekrar"></td>
-                <td><button class="btn btn-danger btn-icon" style="width:24px; height:24px; font-size:10px; margin:0 auto;" onclick="this.closest('tr').remove()">✕</button></td>
-            `;
-            tbody.appendChild(tr);
-        }
-
-        async function saveExerciseSets(exIdx, exName, isWeighted) {
-            const workoutDate = document.getElementById("workoutDateInput").value;
-            const today = getTodayStr();
-            if (!workoutDate) return showToast("Antrenman tarihi seçiniz!", "warning");
-            if (workoutDate > today) return showToast("Hata: Güncel tarihin ilerisinde bir tarih seçilemez!", "error");
-
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-            if (!prog) return;
-
-            const alreadyRecordedToday = uData.history.some(
-                h => h.exerciseName === exName && h.date === workoutDate && isRecordForProgram(h, prog, uData)
-            );
-            if (alreadyRecordedToday) {
-                return showToast(`Hata: ${workoutDate} tarihinde "${prog.name}" programında "${exName}" hareketi için zaten kayıt var!`, "error");
-            }
-
-            const tbody = document.getElementById(`setTbody_${exIdx}`);
-            const rows = tbody.querySelectorAll("tr");
-            const sets = [];
-
-            for (let row of rows) {
-                const repsInput = row.querySelector('.input-reps');
-                const weightInput = row.querySelector('.input-weight');
-
-                const reps = parseFloat(repsInput ? repsInput.value : 0);
-                const weight = isWeighted ? parseFloat(weightInput ? weightInput.value : 0) : 0;
-
-                if (!reps || reps <= 0 || (isWeighted && (!weight || weight <= 0))) {
-                    return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
-                }
-
-                sets.push({ weight, reps });
-            }
-
-            if (sets.length === 0) return showToast("En az 1 set girmelisiniz!", "warning");
-
-            uData.history.push({
-                id: "h_" + Date.now(),
-                userName: currentUser,
-                programId: prog.id,
-                programName: prog.name,
-                date: workoutDate,
-                exerciseName: exName,
-                sets: sets
-            });
-            saveUserData(currentUser, uData);
-
-            showToast(`${exName} (${prog.name}) setleri kaydedildi!`, "info");
-            renderWorkoutExercises();
-
-            await syncToCloud(false);
-        }
-
-        async function deleteHistoryEntry(id) {
-            if (!confirm("Bu set kaydını silmek istediğinize emin misiniz?")) return;
-            const uData = getUserData(currentUser);
-            uData.history = uData.history.filter(h => h.id !== id);
-            saveUserData(currentUser, uData);
-            renderWorkoutExercises();
-            showToast("Kayıt silindi", "info");
-            await syncToCloud(false);
-        }
-
-        // PROGRAM EDIT & EXERCISE MANAGEMENT
-        function openEditProgramListModal() {
-            const uData = getUserData(currentUser);
-            const container = document.getElementById("editProgramListContainer");
-            container.innerHTML = "";
-
-            if (uData.programs.length === 0) {
-                container.innerHTML = '<p>Henüz program yok. Sağ üstteki "+ Yeni Program" butonunu kullanabilirsiniz.</p>';
-            }
-
-            uData.programs.forEach((p, pIdx) => {
-                const card = document.createElement("div");
-                card.className = "card";
-                
-                let exListHtml = p.exercises.map((e, eIdx) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                        <span style="font-size:13px;">• ${e.name} <small style="color:var(--text-muted);">(${e.weighted ? 'Ağırlıklı' : 'Vücut Ağırlığı'})</small></span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="openEditExerciseModalForProg('${p.id}', ${eIdx})" title="Hareketi Düzenle">✏️</button>
-                            <button class="btn btn-danger btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="removeExerciseFromProgramEdit(${pIdx}, ${eIdx})" title="Hareketi Sil">✕</button>
-                        </div>
-                    </div>
-                `).join("");
-
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <h3 style="color:var(--primary); font-size:15px;">${p.name}</h3>
-                        <button class="btn btn-danger btn-icon" style="width:28px; height:28px; font-size:12px;" onclick="deleteProgram('${p.id}')">🗑️</button>
-                    </div>
-                    ${exListHtml}
-                    <button class="btn btn-secondary" style="font-size:11px; padding:8px; margin-top:8px; width:100%;" onclick="openAddExerciseModalForProg('${p.id}')">+ Hareket Ekle</button>
-                `;
-                container.appendChild(card);
-            });
-            openModal("modalEditProgramList");
-        }
-
-        function removeExerciseFromProgramEdit(pIdx, eIdx) {
-            const uData = getUserData(currentUser);
-            uData.programs[pIdx].exercises.splice(eIdx, 1);
-            saveUserData(currentUser, uData);
-            openEditProgramListModal();
-            renderProgramList();
-            showToast("Egzersiz çıkarıldı", "info");
-        }
-
-        function findCategoryForExercise(exName) {
-            for (const [cat, list] of Object.entries(EXERCISE_DATABASE)) {
-                if (list.includes(exName)) return cat;
-            }
-            return Object.keys(EXERCISE_DATABASE)[0];
-        }
-
-        function openAddExerciseModalForProg(progId) {
-            selectedProgramId = progId;
-            editingExerciseIndex = null;
-            selectedAddExerciseName = "";
-
-            document.getElementById("exerciseModalTitle").innerText = "Programa Egzersiz Ekle";
-            document.getElementById("exerciseModalSaveBtn").innerText = "Ekle";
-            document.getElementById("selectedExerciseBadge").style.display = "none";
-            document.getElementById("isWeightedCheckbox").checked = true;
-
-            const catSelect = document.getElementById("categorySelect");
-            catSelect.innerHTML = "";
-            Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
-            onCategoryChange();
-            openModal("modalAddExercise");
-        }
-
-        function openEditExerciseModalForProg(progId, exIdx) {
-            selectedProgramId = progId;
-            editingExerciseIndex = exIdx;
-
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === progId);
-            const currentEx = prog.exercises[exIdx];
-
-            document.getElementById("exerciseModalTitle").innerText = "Programdaki Hareketi Düzenle";
-            document.getElementById("exerciseModalSaveBtn").innerText = "Güncelle";
-
-            const catSelect = document.getElementById("categorySelect");
-            catSelect.innerHTML = "";
-            Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
-
-            const matchedCat = findCategoryForExercise(currentEx.name);
-            catSelect.value = matchedCat;
-            onCategoryChange();
-
-            selectedAddExerciseName = currentEx.name;
-            document.getElementById("selectedExerciseName").innerText = currentEx.name;
-            document.getElementById("selectedExerciseBadge").style.display = "block";
-            document.getElementById("exerciseSearchResults").style.display = "none";
-            document.getElementById("isWeightedCheckbox").checked = currentEx.weighted;
-
-            openModal("modalAddExercise");
-        }
-
-        function openCreateProgramModal() {
-            document.getElementById("newProgramName").value = "";
-            openModal("modalCreateProgram");
-        }
-
-        function saveNewProgram() {
-            const name = document.getElementById("newProgramName").value.trim();
-            if (!name) return showToast("Program adı giriniz!", "warning");
-
-            const uData = getUserData(currentUser);
-            uData.programs.push({ id: "p_" + Date.now(), name: name, exercises: [] });
-            saveUserData(currentUser, uData);
-
-            closeModal("modalCreateProgram");
-            openEditProgramListModal();
-            renderProgramList();
-            showToast("Program oluşturuldu!", "info");
-        }
-
-        function deleteProgram(progId) {
-            if (!confirm("Bu antrenman programını tamamen silmek istediğinizden emin misiniz?")) return;
-            const uData = getUserData(currentUser);
-            uData.programs = uData.programs.filter(p => p.id !== progId);
-            saveUserData(currentUser, uData);
-            openEditProgramListModal();
-            renderProgramList();
-        }
-
-        function onCategoryChange() {
-            document.getElementById("exerciseSearchInput").value = "";
-            showExerciseDropdown();
-        }
-
-        function showExerciseDropdown() {
-            const cat = document.getElementById("categorySelect").value;
-            const exercises = EXERCISE_DATABASE[cat] || [];
-            const resultsDiv = document.getElementById("exerciseSearchResults");
-            resultsDiv.style.display = "block";
-            resultsDiv.innerHTML = "";
-
-            exercises.forEach(ex => {
-                const item = document.createElement("div");
-                item.className = "search-item";
-                item.innerText = ex;
-                item.onclick = () => selectExercise(ex);
-                resultsDiv.appendChild(item);
-            });
-        }
-
-        function filterExercises() {
-            const q = document.getElementById("exerciseSearchInput").value.toLowerCase();
-            const cat = document.getElementById("categorySelect").value;
-            const exercises = EXERCISE_DATABASE[cat] || [];
-            const resultsDiv = document.getElementById("exerciseSearchResults");
-            resultsDiv.style.display = "block";
-
-            const filtered = exercises.filter(e => e.toLowerCase().includes(q));
-            resultsDiv.innerHTML = "";
-
-            filtered.forEach(ex => {
-                const item = document.createElement("div");
-                item.className = "search-item";
-                item.innerText = ex;
-                item.onclick = () => selectExercise(ex);
-                resultsDiv.appendChild(item);
-            });
-        }
-
-        function selectExercise(exName) {
-            selectedAddExerciseName = exName;
-            document.getElementById("selectedExerciseName").innerText = exName;
-            document.getElementById("selectedExerciseBadge").style.display = "block";
-            document.getElementById("exerciseSearchResults").style.display = "none";
-        }
-
-        function confirmExerciseAction() {
-            if (!selectedAddExerciseName) return showToast("Lütfen bir hareket seçin!", "warning");
-            const isWeighted = document.getElementById("isWeightedCheckbox").checked;
-
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === selectedProgramId);
-            if (!prog) return;
-
-            const isDuplicate = prog.exercises.some((ex, idx) => {
-                if (editingExerciseIndex !== null && idx === editingExerciseIndex) return false;
-                return ex.name.toLowerCase() === selectedAddExerciseName.toLowerCase();
-            });
-
-            if (isDuplicate) {
-                return showToast(`Hata: "${selectedAddExerciseName}" bu programda zaten ekli! Aynı hareket 2 kez eklenemez.`, "error");
-            }
-
-            if (editingExerciseIndex !== null) {
-                prog.exercises[editingExerciseIndex] = { name: selectedAddExerciseName, weighted: isWeighted };
-                showToast("Hareket güncellendi!", "info");
-            } else {
-                prog.exercises.push({ name: selectedAddExerciseName, weighted: isWeighted });
-                showToast("Hareket eklendi!", "info");
-            }
-
-            saveUserData(currentUser, uData);
-            closeModal("modalAddExercise");
-            openEditProgramListModal();
-            renderProgramList();
-        }
-
-        // HEALTH MODULE
-        function onHealthDateChange(input) {
-            const today = getTodayStr();
-            if (input.value > today) {
-                showToast("Hata: Güncel tarihin ilerisinde bir ölçüm tarihi seçilemez!", "error");
-                input.value = today;
-            }
-            loadHealthFormForDate(input.value);
-        }
-
-        function loadHealthFormForDate(dateStr) {
-            if (!currentUser || !dateStr) return;
-            const uData = getUserData(currentUser);
-            const existing = uData.health.find(h => h.date === dateStr);
-            const badge = document.getElementById("healthExistingBadge");
-
-            if (existing) {
-                badge.style.display = "inline";
-                HEALTH_FIELDS.forEach(f => {
-                    document.getElementById(`h_${f}`).value = existing[f] !== undefined && existing[f] !== null ? existing[f] : "";
-                });
-                document.getElementById("h_notes").value = existing.notes || "";
-            } else {
-                badge.style.display = "none";
-                HEALTH_FIELDS.forEach(f => {
-                    document.getElementById(`h_${f}`).value = "";
-                });
-                document.getElementById("h_notes").value = "";
-            }
-        }
-
-        async function saveHealthData() {
-            const date = document.getElementById("healthDateInput").value;
-            const today = getTodayStr();
-            if (!date) return showToast("Tarih seçiniz!", "warning");
-            if (date > today) return showToast("Hata: Güncel tarihin ilerisinde bir tarih seçilemez!", "error");
-
-            const uData = getUserData(currentUser);
-            const existingIndex = uData.health.findIndex(h => h.date === date);
-
-            const entry = {
-                id: existingIndex !== -1 ? uData.health[existingIndex].id : "h_" + Date.now(),
-                userName: currentUser,
-                date: date,
-                notes: document.getElementById("h_notes").value.trim()
-            };
-
-            let hasValue = false;
-
-            for (let f of HEALTH_FIELDS) {
-                const val = document.getElementById(`h_${f}`).value.trim();
-                if (val !== "") {
-                    const num = parseFloat(val);
-                    if (isNaN(num) || num <= 0) return showToast("Sıfır veya negatif değer girilemez!", "error");
-                    entry[f] = num;
-                    hasValue = true;
-                }
-            }
-
-            if (entry.notes !== "") hasValue = true;
-
-            if (!hasValue) return showToast("En az bir ölçüm alanı doldurunuz!", "warning");
-
-            if (existingIndex !== -1) {
-                const confirmed = confirm("Önceki Kayıtlarda Değişiklik Yaptınız, Değişiklikleri Kaydetmek İstediğinize Emin misiniz?");
-                if (!confirmed) return;
-                uData.health[existingIndex] = entry;
-            } else {
-                uData.health.push(entry);
-            }
-
-            saveUserData(currentUser, uData);
-            loadHealthFormForDate(date);
-            showToast(existingIndex !== -1 ? "Önceki ölçüm kaydı güncellendi!" : "Ölçüm kaydedildi!", "info");
-
-            await syncToCloud(false);
-        }
-
-        function openHealthHistoryModal() {
-            const uData = getUserData(currentUser);
-            const list = document.getElementById("healthHistoryList");
-            list.innerHTML = "";
-
-            const sorted = sortHistoryByWorkoutDateDesc(uData.health);
-            if (sorted.length === 0) list.innerHTML = "<p>Geçmiş kayıt bulunamadı.</p>";
-
-            sorted.forEach(h => {
-                const card = document.createElement("div");
-                card.className = "card";
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <strong style="color:var(--primary);">${h.date}</strong>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn btn-secondary" style="font-size:10px; padding:4px 8px;" onclick="loadHealthEntryToForm('${h.date}')">Düzenle</button>
-                            <button class="btn btn-danger" style="font-size:10px; padding:4px 8px;" onclick="deleteHealthEntry('${h.id}')">Sil</button>
-                        </div>
-                    </div>
-                    <div style="font-size:12px; display:grid; grid-template-columns:1fr 1fr; gap:6px; color:var(--text-main);">
-                        <span>1. Kilo: <strong>${h.weight ? h.weight + ' kg' : '-'}</strong></span>
-                        <span>2. Yağ Oranı: <strong>${h.fat ? '%' + h.fat : '-'}</strong></span>
-                        <span>3. Bel: <strong>${h.waist ? h.waist + ' cm' : '-'}</strong></span>
-                        <span>4. Kalça: <strong>${h.hip ? h.hip + ' cm' : '-'}</strong></span>
-                        <span>5. Omuz: <strong>${h.shoulder ? h.shoulder + ' cm' : '-'}</strong></span>
-                        <span>6. Kol: <strong>${h.arm ? h.arm + ' cm' : '-'}</strong></span>
-                        <span>7. Üst Bacak: <strong>${h.thigh ? h.thigh + ' cm' : '-'}</strong></span>
-                        <span>8. Boyun: <strong>${h.neck ? h.neck + ' cm' : '-'}</strong></span>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:6px; border-top:1px dashed rgba(255,255,255,0.08); padding-top:4px;">
-                        9. Notlar: <span style="color:var(--text-main);">${h.notes ? h.notes : '-'}</span>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-            openModal("modalHealthHistory");
-        }
-
-        function loadHealthEntryToForm(dateStr) {
-            closeModal("modalHealthHistory");
-            const dateInput = document.getElementById("healthDateInput");
-            dateInput.value = dateStr;
-            loadHealthFormForDate(dateStr);
-            showToast(`${dateStr} tarihli kayıt düzenleme için form alanlarına yüklendi.`, "info");
-        }
-
-        async function deleteHealthEntry(id) {
-            if (!confirm("Bu ölçüm kaydını silmek istediğinizden emin misiniz?")) return;
-            const uData = getUserData(currentUser);
-            uData.health = uData.health.filter(h => h.id !== id);
-            saveUserData(currentUser, uData);
-            openHealthHistoryModal();
-            loadHealthFormForDate(document.getElementById("healthDateInput").value);
-            showToast("Kayıt silindi", "info");
-            await syncToCloud(false);
-        }
-
-        // SAĞLIK GELİŞİM GRAFİKLERİ (HAFTALIK / AYLIK / YILLIK)
-        function parseLocalDate(dateStr) {
-            const [y, m, d] = dateStr.split('-').map(Number);
-            return new Date(y, m - 1, d);
-        }
-
-        function formatShortTRDate(dateObj) {
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            return `${d}.${m}`;
-        }
-
-        function renderHealthChart() {
-            const metric = document.getElementById("chartMetricSelect").value;
-            const period = document.getElementById("chartPeriodSelect").value;
-            const meta = HEALTH_LABELS[metric];
-
-            const uData = getUserData(currentUser);
-            const validRecords = uData.health
-                .filter(h => h[metric] !== undefined && h[metric] !== null && !isNaN(parseFloat(h[metric])))
-                .map(h => ({ date: h.date, dateObj: parseLocalDate(h.date), val: parseFloat(h[metric]) }))
-                .sort((a, b) => a.date.localeCompare(b.date));
-
-            const now = new Date();
-            now.setHours(23, 59, 59, 999);
-
-            let points = [];
-            let periodLabel = "";
-
-            if (period === "weekly") {
-                periodLabel = "Haftalık Gelişim (Son 7 Gün - Gün Gün)";
-                const start = new Date(now);
-                start.setDate(start.getDate() - 6);
-                start.setHours(0, 0, 0, 0);
-
-                for (let i = 0; i < 7; i++) {
-                    const day = new Date(start);
-                    day.setDate(start.getDate() + i);
-                    const y = day.getFullYear();
-                    const m = String(day.getMonth() + 1).padStart(2, '0');
-                    const d = String(day.getDate()).padStart(2, '0');
-                    const iso = `${y}-${m}-${d}`;
-
-                    const found = validRecords.find(r => r.date === iso);
-                    if (found) {
-                        points.push({ label: formatShortTRDate(day), value: found.val });
-                    }
-                }
-            } else if (period === "monthly") {
-                periodLabel = "Aylık Gelişim (Son 4 Hafta - Haftalık Ortalamalar)";
-                for (let w = 3; w >= 0; w--) {
-                    const wEnd = new Date(now);
-                    wEnd.setDate(wEnd.getDate() - (w * 7));
-                    wEnd.setHours(23, 59, 59, 999);
-
-                    const wStart = new Date(wEnd);
-                    wStart.setDate(wStart.getDate() - 6);
-                    wStart.setHours(0, 0, 0, 0);
-
-                    const weekRecs = validRecords.filter(r => r.dateObj >= wStart && r.dateObj <= wEnd);
-                    if (weekRecs.length > 0) {
-                        const avg = weekRecs.reduce((sum, r) => sum + r.val, 0) / weekRecs.length;
-                        points.push({
-                            label: `${formatShortTRDate(wStart)}-${formatShortTRDate(wEnd)}`,
-                            value: Number(avg.toFixed(1))
-                        });
-                    }
-                }
-            } else if (period === "yearly") {
-                periodLabel = "Yıllık Gelişim (Son 12 Ay - Aylık Ortalamalar)";
-                const monthNames = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-                for (let mOffset = 11; mOffset >= 0; mOffset--) {
-                    const target = new Date(now.getFullYear(), now.getMonth() - mOffset, 1);
-                    const tYear = target.getFullYear();
-                    const tMonth = target.getMonth();
-
-                    const monthRecs = validRecords.filter(r => r.dateObj.getFullYear() === tYear && r.dateObj.getMonth() === tMonth);
-                    if (monthRecs.length > 0) {
-                        const avg = monthRecs.reduce((sum, r) => sum + r.val, 0) / monthRecs.length;
-                        points.push({
-                            label: `${monthNames[tMonth]} '${String(tYear).slice(-2)}`,
-                            value: Number(avg.toFixed(1))
-                        });
-                    }
-                }
-            }
-
-            const resultCard = document.getElementById("healthChartResultCard");
-            const container = document.getElementById("healthChartCanvasContainer");
-            document.getElementById("healthChartTitle").innerText = `${meta.name} (${meta.unit})`;
-            document.getElementById("healthChartSubtitle").innerText = periodLabel;
-            resultCard.style.display = "block";
-
-            if (points.length === 0) {
-                container.innerHTML = `<p style="text-align:center; padding:24px 8px;">Seçilen tarih aralığında <strong>${meta.name}</strong> için kayıt bulunamadı.</p>`;
-                return;
-            }
-
-            container.innerHTML = buildSVGLineChart(points, meta.unit);
-        }
-
-        function buildSVGLineChart(points, unit) {
-            const width = Math.max(360, points.length * 64);
-            const height = 230;
-            const padLeft = 42;
-            const padRight = 24;
-            const padTop = 28;
-            const padBottom = 42;
-
-            const vals = points.map(p => p.value);
-            let minVal = Math.min(...vals);
-            let maxVal = Math.max(...vals);
-            if (minVal === maxVal) {
-                minVal = Math.max(0, minVal - 1);
-                maxVal = maxVal + 1;
-            } else {
-                const margin = (maxVal - minVal) * 0.15;
-                minVal = Math.max(0, minVal - margin);
-                maxVal = maxVal + margin;
-            }
-
-            const plotW = width - padLeft - padRight;
-            const plotH = height - padTop - padBottom;
-
-            const coords = points.map((p, idx) => {
-                const x = points.length === 1
-                    ? padLeft + plotW / 2
-                    : padLeft + (idx / (points.length - 1)) * plotW;
-                const y = padTop + plotH - ((p.value - minVal) / (maxVal - minVal)) * plotH;
-                return { x, y, label: p.label, value: p.value };
-            });
-
-            let gridLines = "";
-            for (let g = 0; g <= 3; g++) {
-                const gy = padTop + (g / 3) * plotH;
-                const gVal = (maxVal - (g / 3) * (maxVal - minVal)).toFixed(1);
-                gridLines += `
-                    <line x1="${padLeft}" y1="${gy}" x2="${width - padRight}" y2="${gy}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
-                    <text x="${padLeft - 6}" y="${gy + 4}" fill="#94a3b8" font-size="10" text-anchor="end">${gVal}</text>
-                `;
-            }
-
-            const polylinePoints = coords.map(c => `${c.x},${c.y}`).join(" ");
-            const areaPoints = coords.length > 1
-                ? `${coords[0].x},${padTop + plotH} ${polylinePoints} ${coords[coords.length - 1].x},${padTop + plotH}`
-                : "";
-
-            const dotsAndLabels = coords.map(c => `
-                <circle cx="${c.x}" cy="${c.y}" r="4.5" fill="#00ff88" stroke="#0a0f1d" stroke-width="2" />
-                <text x="${c.x}" y="${c.y - 9}" fill="#f1f5f9" font-size="11" font-weight="700" text-anchor="middle">${c.value}${unit}</text>
-                <text x="${c.x}" y="${height - 14}" fill="#94a3b8" font-size="10" text-anchor="middle">${c.label}</text>
-            `).join("");
-
-            return `
-                <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="display:block; margin:0 auto;">
-                    <defs>
-                        <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#00ff88" stop-opacity="0.28" />
-                            <stop offset="100%" stop-color="#00ff88" stop-opacity="0.0" />
-                        </linearGradient>
-                    </defs>
-                    ${gridLines}
-                    ${areaPoints ? `<polygon points="${areaPoints}" fill="url(#chartAreaGrad)" />` : ''}
-                    ${coords.length > 1 ? `<polyline fill="none" stroke="#00ff88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polylinePoints}" />` : ''}
-                    ${dotsAndLabels}
-                </svg>
-            `;
-        }
-
-        // REPORTS
-        function renderReports() {
-            const uData = getUserData(currentUser);
-            
-            const healthContainer = document.getElementById("healthReportContainer");
-            healthContainer.innerHTML = "";
-            sortHistoryByWorkoutDateDesc(uData.health).forEach(h => {
-                const items = [];
-                if (h.weight) items.push(`Kilo: ${h.weight}kg`);
-                if (h.fat) items.push(`Yağ: %${h.fat}`);
-                if (h.waist) items.push(`Bel: ${h.waist}cm`);
-                if (h.hip) items.push(`Kalça: ${h.hip}cm`);
-                if (h.shoulder) items.push(`Omuz: ${h.shoulder}cm`);
-                if (h.arm) items.push(`Kol: ${h.arm}cm`);
-                if (h.thigh) items.push(`Bacak: ${h.thigh}cm`);
-                if (h.neck) items.push(`Boyun: ${h.neck}cm`);
-
-                healthContainer.innerHTML += `
-                    <div style="padding:8px 0; border-bottom:1px solid var(--border-color); font-size:13px;">
-                        <strong style="color:var(--primary);">${h.date}:</strong> ${items.join(' | ')}
-                        ${h.notes ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Not: ${h.notes}</div>` : ''}
-                    </div>
-                `;
-            });
-
-            const exSelect = document.getElementById("reportExerciseSelect");
-            exSelect.innerHTML = '<option value="">-- Program & Egzersiz Seçin --</option>';
-
-            const seenKeys = new Set();
-            uData.history.forEach(h => {
-                const progObj = uData.programs.find(p => p.id === h.programId || p.name === h.programName);
-                const pId = progObj ? progObj.id : (h.programId || "default");
-                const pName = progObj ? progObj.name : (h.programName || "Genel");
-                const key = `${pId}|||${h.exerciseName}`;
-                if (!seenKeys.has(key)) {
-                    seenKeys.add(key);
-                    exSelect.innerHTML += `<option value="${key}">[${pName}] ${h.exerciseName}</option>`;
-                }
-            });
-        }
-
-        function renderExerciseReport() {
-            const selectedVal = document.getElementById("reportExerciseSelect").value;
-            const container = document.getElementById("exerciseReportContainer");
-            container.innerHTML = "";
-
-            if (!selectedVal) return;
-
-            const [targetProgId, targetExName] = selectedVal.split("|||");
-            const uData = getUserData(currentUser);
-            const prog = uData.programs.find(p => p.id === targetProgId);
-
-            const filtered = sortHistoryByWorkoutDateDesc(
-                uData.history.filter(h => {
-                    if (h.exerciseName !== targetExName) return false;
-                    if (prog) return isRecordForProgram(h, prog, uData);
-                    return (h.programId || "default") === targetProgId;
-                })
-            );
-
-            filtered.forEach(h => {
-                const setStr = h.sets.map((s, i) => `#${i+1}: ${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}tekrar`).join('<br>');
-                container.innerHTML += `
-                    <div style="padding:8px 0; border-bottom:1px solid var(--border-color); font-size:13px;">
-                        <strong style="color:var(--primary);">${h.date}</strong><br>
-                        ${setStr}
-                    </div>
-                `;
-            });
-        }
-    </script>
+      }
+
+      renderRecentWorkoutHistory();
+      markDirty();
+      showToast("Antrenman kaydı başarıyla eklendi!");
+    }
+
+    function renderRecentWorkoutHistory() {
+      const progId = document.getElementById("workoutProgramSelect").value;
+      const container = document.getElementById("recentWorkoutHistory");
+
+      const filtered = userData.workouts
+        .filter(w => w.programId === progId)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state">Bu program için henüz kayıtlı antrenman yok.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(w => {
+        const setSummary = w.sets.map((s, i) =>
+          w.bodyweight ? `${i + 1}.Set: ${s.reps} tekrar` : `${i + 1}.Set: ${s.weight}kg × ${s.reps}`
+        ).join(" | ");
+
+        return `
+          <div class="history-card">
+            <div class="history-header">
+              <strong>${w.exercise}</strong>
+              <span>${w.date}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-primary); margin-bottom:8px;">${setSummary}</div>
+            <div class="flex-row" style="justify-content:flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="openEditWorkoutModal('${w.id}')">Düzenle</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteWorkoutLog('${w.id}')">Sil</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openEditWorkoutModal(workoutId) {
+      const log = userData.workouts.find(w => w.id === workoutId);
+      if (!log) return;
+
+      document.getElementById("editWorkoutId").value = workoutId;
+      document.getElementById("editWorkoutTitle").textContent = `${log.exercise} • ${log.date}`;
+      const container = document.getElementById("editWorkoutSetsContainer");
+      container.innerHTML = "";
+
+      log.sets.forEach((s, idx) => {
+        appendSetRowElement(container, idx + 1, log.bodyweight, s.weight, s.reps);
+      });
+
+      document.getElementById("editWorkoutModal").classList.add("open");
+    }
+
+    function saveEditedWorkoutLog() {
+      const id = document.getElementById("editWorkoutId").value;
+      const log = userData.workouts.find(w => w.id === id);
+      if (!log) return;
+
+      const rows = document.querySelectorAll("#editWorkoutSetsContainer .set-row");
+      const updatedSets = [];
+      rows.forEach(row => {
+        const reps = parseFloat(row.querySelector(".set-reps")?.value) || 0;
+        const weight = parseFloat(row.querySelector(".set-weight")?.value) || 0;
+        if (reps > 0 || weight > 0) {
+          updatedSets.push({ weight: log.bodyweight ? 0 : weight, reps });
+        }
+      });
+
+      if (updatedSets.length === 0) return showToast("En az bir set kalmalıdır.");
+      log.sets = updatedSets;
+
+      renderRecentWorkoutHistory();
+      markDirty();
+      closeModal("editWorkoutModal");
+      showToast("Antrenman kaydı güncellendi.");
+    }
+
+    function deleteWorkoutLog(workoutId) {
+      if (!confirm("Bu antrenman kaydını silmek istediğinize emin misiniz?")) return;
+      userData.workouts = userData.workouts.filter(w => w.id !== workoutId);
+      renderRecentWorkoutHistory();
+      markDirty();
+      showToast("Kayıt silindi.");
+    }
+
+    function openExerciseImageModal() {
+      const exName = document.getElementById("workoutExerciseSelect").value;
+      if (!exName) return;
+
+      const modal = document.getElementById("exerciseImageModal");
+      const img = document.getElementById("exercisePreviewImg");
+      const fallback = document.getElementById("exerciseImgFallback");
+      document.getElementById("imgModalTitle").textContent = exName;
+
+      img.style.display = "none";
+      fallback.style.display = "none";
+
+      img.onload = () => {
+        img.style.display = "block";
+      };
+      img.onerror = () => {
+        fallback.style.display = "block";
+      };
+      img.src = `${encodeURIComponent(exName)}.png`;
+
+      modal.classList.add("open");
+    }
+
+    // ==================== BODY METRICS ====================
+    function openBodyMetricsScreen() {
+      const today = getTodayStr();
+      const dateInput = document.getElementById("bodyDateInput");
+      dateInput.max = today;
+      if (!dateInput.value) dateInput.value = today;
+
+      renderBodyHistory();
+      showScreen("screen-body");
+    }
+
+    function validateBodyDate() {
+      const today = getTodayStr();
+      const input = document.getElementById("bodyDateInput");
+      if (input.value > today) {
+        input.value = today;
+        showToast("Gelecek tarih seçilemez!");
+      }
+    }
+
+    function saveBodyMetric() {
+      const date = document.getElementById("bodyDateInput").value;
+      const weight = parseFloat(document.getElementById("bodyWeight").value);
+      if (!date || !weight) {
+        return showToast("Tarih ve Kilo (kg) alanları zorunludur.");
+      }
+
+      const entry = {
+        date,
+        weight,
+        fat: parseFloat(document.getElementById("bodyFat").value) || null,
+        waist: parseFloat(document.getElementById("bodyWaist").value) || null,
+        hip: parseFloat(document.getElementById("bodyHip").value) || null,
+        shoulder: parseFloat(document.getElementById("bodyShoulder").value) || null,
+        arm: parseFloat(document.getElementById("bodyArm").value) || null,
+        thigh: parseFloat(document.getElementById("bodyThigh").value) || null,
+        neck: parseFloat(document.getElementById("bodyNeck").value) || null,
+        note: document.getElementById("bodyNote").value.trim()
+      };
+
+      const existingIdx = userData.bodyMetrics.findIndex(b => b.date === date);
+      if (existingIdx !== -1) {
+        if (!confirm(`${date} tarihi için zaten ölçüm var. Güncellensin mi?`)) return;
+        userData.bodyMetrics[existingIdx] = entry;
+      } else {
+        userData.bodyMetrics.push(entry);
+      }
+
+      renderBodyHistory();
+      markDirty();
+      showToast("Vücut ölçümü kaydedildi.");
+    }
+
+    function renderBodyHistory() {
+      const container = document.getElementById("bodyHistoryList");
+      const sorted = [...userData.bodyMetrics].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+
+      if (sorted.length === 0) {
+        container.innerHTML = `<div class="empty-state">Henüz vücut ölçümü kaydı bulunmuyor.</div>`;
+        return;
+      }
+
+      container.innerHTML = sorted.map(b => `
+        <div class="history-card">
+          <div class="history-header">
+            <strong>${b.date}</strong>
+            <span class="badge">${b.weight} kg</span>
+          </div>
+          <div style="font-size:12px; color:var(--text-secondary);">
+            ${b.fat ? `Yağ: %${b.fat} • ` : ""}
+            ${b.waist ? `Bel: ${b.waist}cm • ` : ""}
+            ${b.arm ? `Kol: ${b.arm}cm • ` : ""}
+            ${b.shoulder ? `Omuz: ${b.shoulder}cm` : ""}
+          </div>
+          ${b.note ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Not: ${b.note}</div>` : ""}
+        </div>
+      `).join("");
+    }
+
+    // ==================== REPORTS & CHARTS ====================
+    function openReportsScreen() {
+      const exSel = document.getElementById("reportExerciseSelect");
+      const uniqueExercises = [...new Set(userData.workouts.map(w => w.exercise))];
+      exSel.innerHTML = "";
+      if (uniqueExercises.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Kayıtlı hareket yok";
+        exSel.appendChild(opt);
+      } else {
+        uniqueExercises.forEach(name => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          exSel.appendChild(opt);
+        });
+      }
+
+      renderReportChart();
+      showScreen("screen-reports");
+    }
+
+    function switchReportMode(mode) {
+      reportMode = mode;
+      document.getElementById("tabBodyChart").classList.toggle("active", mode === "body");
+      document.getElementById("tabExerciseChart").classList.toggle("active", mode === "exercise");
+      document.getElementById("bodyChartControls").style.display = mode === "body" ? "block" : "none";
+      document.getElementById("exerciseChartControls").style.display = mode === "exercise" ? "block" : "none";
+      renderReportChart();
+    }
+
+    function setReportPeriod(period) {
+      reportPeriod = period;
+      document.getElementById("period7d").classList.toggle("active", period === "7d");
+      document.getElementById("period4w").classList.toggle("active", period === "4w");
+      document.getElementById("period12m").classList.toggle("active", period === "12m");
+      renderReportChart();
+    }
+
+    function renderReportChart() {
+      const area = document.getElementById("chartRenderArea");
+      let points = [];
+
+      if (reportMode === "body") {
+        const metric = document.getElementById("reportBodyMetricSelect").value;
+        const sorted = [...userData.bodyMetrics]
+          .filter(b => b[metric] !== null && b[metric] !== undefined)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        const limit = reportPeriod === "7d" ? 7 : (reportPeriod === "4w" ? 15 : 30);
+        points = sorted.slice(-limit).map(item => ({
+          label: item.date.slice(5),
+          value: Number(item[metric])
+        }));
+      } else {
+        const exName = document.getElementById("reportExerciseSelect").value;
+        const sorted = userData.workouts
+          .filter(w => w.exercise === exName)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        const limit = reportPeriod === "7d" ? 7 : (reportPeriod === "4w" ? 15 : 30);
+        points = sorted.slice(-limit).map(w => {
+          const maxVal = w.bodyweight
+            ? Math.max(...w.sets.map(s => s.reps || 0))
+            : Math.max(...w.sets.map(s => s.weight || 0));
+          return {
+            label: w.date.slice(5),
+            value: maxVal
+          };
+        });
+      }
+
+      if (points.length === 0) {
+        area.innerHTML = `<div class="empty-state">Grafik oluşturmak için yeterli veri bulunmuyor.</div>`;
+        return;
+      }
+
+      const width = 440;
+      const height = 210;
+      const pad = 32;
+      const values = points.map(p => p.value);
+      const minVal = Math.min(...values);
+      const maxVal = Math.max(...values);
+      const range = maxVal - minVal || 1;
+
+      const coords = points.map((p, idx) => {
+        const x = pad + (idx * (width - pad * 2)) / Math.max(1, points.length - 1);
+        const y = height - pad - ((p.value - minVal) / range) * (height - pad * 2);
+        return { x, y, label: p.label, value: p.value };
+      });
+
+      const polylinePoints = coords.map(c => `${c.x},${c.y}`).join(" ");
+
+      area.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;">
+          <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="#334155" stroke-width="1" />
+          <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#334155" stroke-width="1" />
+          <polyline fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${polylinePoints}" />
+          ${coords.map(c => `
+            <circle cx="${c.x}" cy="${c.y}" r="4.5" fill="#10b981" stroke="#0f172a" stroke-width="1.5" />
+            <text x="${c.x}" y="${c.y - 9}" fill="#f8fafc" font-size="10" font-weight="600" text-anchor="middle">${c.value}</text>
+            <text x="${c.x}" y="${height - 12}" fill="#94a3b8" font-size="9" text-anchor="middle">${c.label}</text>
+          `).join("")}
+        </svg>
+      `;
+    }
+
+    // ==================== INIT ====================
+    window.addEventListener("DOMContentLoaded", () => {
+      ensureDefaultUser();
+      renderExerciseDropdownList();
+    });
+  </script>
 </body>
 </html>
