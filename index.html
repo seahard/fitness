@@ -821,9 +821,9 @@
       <section id="screen-dashboard" class="screen">
         <div class="user-banner">
           <div class="user-info">
-            <div class="avatar-circle" id="dashAvatar">Y</div>
+            <div class="avatar-circle" id="dashAvatar">S</div>
             <div>
-              <div style="font-weight:700; font-size:16px;" id="dashUsername">Yavuz</div>
+              <div style="font-weight:700; font-size:16px;" id="dashUsername">Sporcu</div>
               <div style="font-size:12px; color:var(--text-secondary);" id="dashStatsSummary">Aktif Sporcu</div>
             </div>
           </div>
@@ -1450,6 +1450,13 @@
       return `${y}-${m}-${d}`;
     }
 
+    function getUserDisplayName(userObj) {
+      if (!userObj) return "Sporcu";
+      const candidate = userObj.username || userObj.name || userObj.user || userObj.email || "";
+      const trimmed = String(candidate).trim();
+      return trimmed || "Sporcu";
+    }
+
     function setSyncStatus(state, label) {
       const badge = document.getElementById("syncBadge");
       const text = document.getElementById("syncText");
@@ -1552,7 +1559,8 @@
     }
 
     function loadLocalUserData(username) {
-      const key = `fbr_user_${username}`;
+      const safeName = String(username || "Sporcu").trim() || "Sporcu";
+      const key = `fbr_user_${safeName}`;
       try {
         const raw = localStorage.getItem(key);
         if (raw) {
@@ -1571,16 +1579,18 @@
 
     function saveLocalUserData() {
       if (!currentUser || !userData) return;
+      const safeName = getUserDisplayName(currentUser);
       userData.updatedAt = Date.now();
-      localStorage.setItem(`fbr_user_${currentUser.username}`, JSON.stringify(userData));
+      localStorage.setItem(`fbr_user_${safeName}`, JSON.stringify(userData));
     }
 
     // ==================== FIREBASE SYNC ====================
     async function syncFromFirebase(username) {
-      if (!db) return;
+      const safeName = String(username || "").trim();
+      if (!db || !safeName) return;
       setSyncStatus("syncing", "Yükleniyor...");
       try {
-        const docSnap = await db.collection("fitness_users").doc(username).get();
+        const docSnap = await db.collection("fitness_users").doc(safeName).get();
         if (docSnap.exists) {
           const remoteData = docSnap.data();
           if (remoteData && remoteData.payload) {
@@ -1603,10 +1613,11 @@
 
     async function syncToFirebase() {
       if (!db || !currentUser || !userData) return;
+      const safeName = getUserDisplayName(currentUser);
       setSyncStatus("syncing", "Senkronize Ediliyor...");
       try {
-        await db.collection("fitness_users").doc(currentUser.username).set({
-          username: currentUser.username,
+        await db.collection("fitness_users").doc(safeName).set({
+          username: safeName,
           payload: JSON.stringify(userData),
           syncedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
@@ -1656,22 +1667,27 @@
     }
 
     async function handleLogin() {
-      const username = document.getElementById("loginUsername").value.trim();
+      const inputVal = document.getElementById("loginUsername").value.trim();
       const password = document.getElementById("loginPassword").value;
-      if (!username) return showToast("Lütfen kullanıcı adını girin.");
+      if (!inputVal) return showToast("Lütfen kullanıcı adını girin.");
 
       const users = getUsersDb();
-      const user = users[username];
+      const matchedKey = Object.keys(users).find(
+        k => k.toLowerCase() === inputVal.toLowerCase()
+      );
+      const user = matchedKey ? users[matchedKey] : null;
+
       if (!user || user.password !== password) {
         return showToast("Kullanıcı adı veya şifre hatalı!");
       }
 
-      currentUser = user;
-      loadLocalUserData(username);
+      const resolvedName = getUserDisplayName(user) !== "Sporcu" ? getUserDisplayName(user) : matchedKey;
+      currentUser = { ...user, username: resolvedName };
+      loadLocalUserData(resolvedName);
       updateDashboardSummary();
       showScreen("screen-dashboard");
-      showToast(`Hoş geldin, ${username}!`);
-      await syncFromFirebase(username);
+      showToast(`Hoş geldin, ${resolvedName}!`);
+      await syncFromFirebase(resolvedName);
       updateDashboardSummary();
     }
 
@@ -1737,23 +1753,26 @@
     }
 
     function updateDashboardSummary() {
-      if (!currentUser || !userData) return;
-      document.getElementById("dashUsername").textContent = currentUser.username;
+      const displayName = getUserDisplayName(currentUser);
+      document.getElementById("dashUsername").textContent = displayName;
+
       const avatarEl = document.getElementById("dashAvatar");
-      if (currentUser.avatar) {
+      if (currentUser && currentUser.avatar) {
         avatarEl.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar" />`;
       } else {
-        avatarEl.textContent = currentUser.username.charAt(0).toUpperCase();
+        avatarEl.textContent = displayName.charAt(0).toUpperCase();
       }
-      const progCount = userData.programs.length;
-      const workoutCount = userData.workouts.length;
+
+      const progCount = (userData && Array.isArray(userData.programs)) ? userData.programs.length : 0;
+      const workoutCount = (userData && Array.isArray(userData.workouts)) ? userData.workouts.length : 0;
       document.getElementById("dashStatsSummary").textContent = `${progCount} Program • ${workoutCount} Antrenman Kaydı`;
     }
 
     // ==================== PROFILE MODAL ====================
     function openProfileModal() {
       if (!currentUser) return;
-      document.getElementById("profUsername").value = currentUser.username;
+      const displayName = getUserDisplayName(currentUser);
+      document.getElementById("profUsername").value = displayName;
       document.getElementById("profPhone").value = currentUser.phone || "";
       document.getElementById("profNewPassword").value = "";
       document.getElementById("profAvatarInput").value = "";
@@ -1761,10 +1780,12 @@
     }
 
     async function saveProfileChanges() {
+      const displayName = getUserDisplayName(currentUser);
       const users = getUsersDb();
-      const user = users[currentUser.username];
+      const user = users[displayName] || currentUser;
       if (!user) return;
 
+      user.username = displayName;
       user.phone = document.getElementById("profPhone").value.trim();
       const newPass = document.getElementById("profNewPassword").value;
       if (newPass) user.password = newPass;
@@ -1774,6 +1795,7 @@
         user.avatar = await processAvatarImage(file);
       }
 
+      users[displayName] = user;
       saveUsersDb(users);
       currentUser = user;
       updateDashboardSummary();
@@ -1783,7 +1805,6 @@
 
     // ==================== PROGRAM MANAGEMENT & EXERCISE SEARCH ====================
     function openProgramsScreen() {
-      // Kas Grubu Seç menüsü varsayılan olarak 'Hepsi' gelir
       const groupSelect = document.getElementById("muscleGroupSelect");
       groupSelect.value = "Hepsi";
 
@@ -1905,7 +1926,6 @@
       document.getElementById("exerciseDropdownList").classList.add("open");
     }
 
-    // Kas grubu değiştiğinde arama kutusundaki metin SİLİNMEZ, korunur
     function handleMuscleGroupChange() {
       renderExerciseDropdownList();
     }
@@ -1925,7 +1945,6 @@
       document.getElementById("exerciseDropdownList").classList.remove("open");
     }
 
-    // Dışarı tıklanınca egzersiz açılır listesini kapat
     document.addEventListener("click", (e) => {
       const wrapper = document.getElementById("exerciseSearchWrapper");
       if (wrapper && !wrapper.contains(e.target)) {
@@ -2094,7 +2113,6 @@
       const exObj = prog.exercises.find(e => e.name === exName) || { sets: 4, bodyweight: false };
       document.getElementById("currentExerciseTitle").textContent = `${exName} (${exObj.sets} Set)`;
 
-      // Kullanıcının bu hareketteki son kaydını referans olarak bul
       const pastLogs = userData.workouts
         .filter(w => w.exercise === exName)
         .sort((a, b) => b.date.localeCompare(a.date));
