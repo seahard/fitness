@@ -320,6 +320,26 @@
         .set-table th { color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
         .set-table input { text-align: center; padding: 6px; font-size: 14px; }
 
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .metric-field { min-width: 0; }
+        .metric-field:last-child { grid-column: 1 / -1; }
+        .metric-field label { text-transform: none; letter-spacing: 0; }
+        .metric-field select { margin-bottom: 6px; }
+        .metric-field input { font-variant-numeric: tabular-nums; }
+        .metric-help { color: var(--text-muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
+        .metric-hint {
+            padding: 10px;
+            background: rgba(0, 216, 255, 0.08);
+            border: 1px solid rgba(0, 216, 255, 0.20);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 12px;
+        }
+
         .last-record-badge {
             background: rgba(0, 216, 255, 0.1);
             color: var(--secondary);
@@ -629,7 +649,7 @@
                 <input type="date" id="editHistoryDateInput" onchange="validateWorkoutDate(this)">
             </div>
             <div id="editHistorySetsContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
-            <button class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="addRowToEditHistory()">+ Yeni Set Satırı Ekle</button>
+            <button id="editHistoryAddSetButton" class="btn btn-secondary" style="font-size:12px; padding:8px;" onclick="addRowToEditHistory()">+ Yeni Set Satırı Ekle</button>
             <div style="display: flex; gap: 8px; margin-top: 6px;">
                 <button class="btn" style="flex: 1;" onclick="saveEditedHistory()">Değişiklikleri Kaydet</button>
                 <button class="btn btn-secondary" onclick="closeModal('modalEditHistory')">İptal</button>
@@ -756,10 +776,14 @@
                     <button type="button" class="btn-info-q" onclick="openSelectedExerciseImageModal()" title="Hareket Görselini Göster">?</button>
                 </div>
             </div>
-            <div>
+            <div id="weightedExerciseOption">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
                     <input type="checkbox" id="isWeightedCheckbox" checked style="width: auto;"> Ağırlıklı Hareket (Kilo + Tekrar)
                 </label>
+            </div>
+            <div id="metricExerciseHint" class="metric-hint" style="display: none;">
+                Kardiyo ve Calves hareketlerinde antrenman sırasında <strong>Süre</strong>,
+                <strong>Seviye / Eğim</strong> ve <strong>Hız / Mesafe</strong> bilgileri girilir.
             </div>
             <div style="display: flex; gap: 8px;">
                 <button class="btn" style="flex: 1;" id="exerciseModalSaveBtn" onclick="confirmExerciseAction()">Ekle</button>
@@ -779,18 +803,208 @@
 
     <script>
         const EXERCISE_DATABASE = {
-            "Göğüs": ["Barbell Bench Press", "Incline Barbell Bench Press", "Dumbbell Bench Press", "Incline Dumbbell Bench Press", "Chest Press Machine", "Dumbbell Fly", "Cable Crossover", "Chest Dips", "Push-Up"],
-            "Sırt": ["Pull-Up (Barfiks)", "Chin-Up", "Lat Pulldown (Wide Grip)", "Barbell Bent-Over Row", "Dumbbell One-Arm Row", "T-Bar Row", "Seated Cable Row", "Hyperextension"],
-            "Omuz": ["Barbell Overhead Press", "Dumbbell Shoulder Press", "Arnold Press", "Dumbbell Lateral Raise", "Cable Lateral Raise", "Dumbbell Front Raise", "Face Pull", "Barbell Shrug"],
-            "Ön Kol": ["Barbell Biceps Curl", "EZ-Bar Curl", "Dumbbell Biceps Curl", "Hammer Curl", "Preacher Curl (EZ-Bar)", "Concentration Curl"],
-            "Arka Kol": ["Cable Triceps Pushdown", "Cable Rope Pushdown", "Skull Crusher", "Overhead Dumbbell Extension", "Close-Grip Bench Press", "Triceps Dips"],
-            "Ön Bacak": ["Barbell Back Squat", "Leg Press", "Leg Extension", "Walking Lunge", "Bulgarian Split Squat"],
-            "Arka Bacak": ["Conventional Deadlift", "Romanian Deadlift (RDL)", "Lying Leg Curl", "Seated Leg Curl"],
-            "Kalça": ["Barbell Hip Thrust", "Glute Bridge", "Cable Glute Kickback", "Hip Abduction Machine"],
-            "Karın": ["Crunch", "Cable Crunch", "Hanging Leg Raise", "Plank", "Ab Wheel Rollout", "Russian Twist"],
-            "Bilek ve Ön Kol": ["Barbell Wrist Curl", "Reverse Barbell Wrist Curl", "Farmer's Walk"],
-            "Baldır": ["Standing Calf Raise", "Seated Calf Raise"]
-        };
+            "Göğüs": [
+                        "Barbell Bench Press",
+                        "Incline Barbell Bench Press",
+                        "Decline Barbell Bench Press",
+                        "Dumbbell Bench Press",
+                        "Incline Dumbbell Bench Press",
+                        "Decline Dumbbell Bench Press",
+                        "Chest Press Machine",
+                        "Incline Chest Press Machine",
+                        "Decline Chest Press Machine",
+                        "Dumbbell Fly",
+                        "Incline Dumbbell Fly",
+                        "Cable Crossover",
+                        "Low Cable Crossover",
+                        "High Cable Crossover",
+                        "Single-Arm Cable Crossover",
+                        "Chest Dips",
+                        "Machine Dips",
+                        "Push-Up",
+                        "Decline Push-Up",
+                        "Incline Push-Up",
+                        "Pec Deck Fly",
+                        "Machine Chest Fly",
+                        "Landmine Press",
+                        "Smith Machine Bench Press",
+                        "Cable Chest Press (Standing)",
+                        "Dumbbell Pullover"
+            ],
+            "Sırt": [
+                        "Pull-Up (Barfiks)",
+                        "Chin-Up",
+                        "Neutral Grip Pull-Up",
+                        "Lat Pulldown (Wide Grip)",
+                        "Lat Pulldown (Close Grip / V-Bar)",
+                        "Neutral Grip Lat Pulldown",
+                        "Reverse Grip Lat Pulldown",
+                        "Barbell Bent-Over Row",
+                        "Underhand Barbell Row",
+                        "Dumbbell One-Arm Row",
+                        "T-Bar Row",
+                        "Seated Cable Row",
+                        "Wide Grip Seated Cable Row",
+                        "Low Row Machine",
+                        "High Row Machine",
+                        "Straight-Arm Pulldown",
+                        "Chest-Supported Row",
+                        "Inverted Row (Bodyweight)",
+                        "Deadlift (Conventional)",
+                        "Rack Pull",
+                        "Hyperextension"
+            ],
+            "Omuz": [
+                        "Barbell Overhead Press (Military Press)",
+                        "Push Press",
+                        "Dumbbell Shoulder Press",
+                        "Seated Dumbbell Shoulder Press",
+                        "Arnold Press",
+                        "Dumbbell Lateral Raise",
+                        "Cable Lateral Raise",
+                        "Machine Lateral Raise",
+                        "Bent-Over Rear Delt Fly",
+                        "Reverse Pec Deck Fly",
+                        "Rear Delt Machine Fly",
+                        "Face Pull",
+                        "Cable Rear Delt Fly",
+                        "Dumbbell Front Raise",
+                        "Plate Front Raise",
+                        "Cable Front Raise",
+                        "Barbell Shrug",
+                        "Dumbbell Shrug",
+                        "Upright Row",
+                        "Landmine Press (Shoulder)"
+            ],
+            "Ön Kol": [
+                        "Barbell Biceps Curl",
+                        "EZ-Bar Curl",
+                        "Z-Bar Curl",
+                        "Close-Grip EZ-Bar Curl",
+                        "Dumbbell Biceps Curl",
+                        "Incline Dumbbell Biceps Curl",
+                        "Hammer Curl",
+                        "Cross-Body Hammer Curl",
+                        "Preacher Curl (EZ-Bar)",
+                        "Dumbbell Preacher Curl",
+                        "Concentration Curl",
+                        "Cable Biceps Curl",
+                        "High Cable (Cali) Curl",
+                        "Zottman Curl",
+                        "Incline Hammer Curl"
+            ],
+            "Arka Kol": [
+                        "Cable Triceps Pushdown (Straight Bar)",
+                        "Cable Rope Pushdown",
+                        "Overhead Cable Triceps Extension",
+                        "Skull Crusher (EZ-Bar)",
+                        "Dumbbell Skull Crusher",
+                        "Overhead Dumbbell Extension",
+                        "Close-Grip Bench Press",
+                        "Triceps Dips",
+                        "Bench Dips",
+                        "Kickback (Dumbbell)",
+                        "Cable Kickback",
+                        "Tate Press",
+                        "Close-Grip Pushdown (Rope)"
+            ],
+            "Ön Bacak": [
+                        "Barbell Back Squat",
+                        "Front Squat",
+                        "Goblet Squat",
+                        "Hack Squat",
+                        "Leg Press",
+                        "45-Degree Leg Press",
+                        "Leg Extension",
+                        "Walking Lunge",
+                        "Reverse Lunge",
+                        "Bulgarian Split Squat",
+                        "Step-Up",
+                        "Sissy Squat",
+                        "Sled Push",
+                        "Wall Sit"
+            ],
+            "Arka Bacak": [
+                        "Conventional Deadlift",
+                        "Sumo Deadlift",
+                        "Romanian Deadlift (RDL)",
+                        "Dumbbell Romanian Deadlift",
+                        "Stiff-Legged Deadlift",
+                        "Lying Leg Curl",
+                        "Seated Leg Curl",
+                        "Standing Leg Curl",
+                        "Good Morning",
+                        "Nordic Hamstring Curl",
+                        "Swiss Ball Hamstring Curl"
+            ],
+            "Kalça": [
+                        "Barbell Hip Thrust",
+                        "Machine Hip Thrust",
+                        "Glute Bridge",
+                        "Barbell Glute Bridge",
+                        "Cable Glute Kickback",
+                        "Smith Machine Kickback",
+                        "Hip Abduction Machine",
+                        "Cable Hip Abduction",
+                        "Hyper-Extension (Glute-Focused)",
+                        "Cable Pull-Through",
+                        "Band Hip Thrust"
+            ],
+            "Karın": [
+                        "Crunch",
+                        "Cable Crunch",
+                        "Decline Crunch",
+                        "Hanging Leg Raise",
+                        "Hanging Knee Raise",
+                        "Captain's Chair Leg Raise",
+                        "Lying Leg Raise",
+                        "Plank",
+                        "Side Plank",
+                        "Ab Wheel Rollout",
+                        "Russian Twist",
+                        "Woodchopper (Cable)",
+                        "Toes to Bar",
+                        "Sit-up",
+                        "Decline Sit-up",
+                        "V-Sit Up",
+                        "Bicycle Crunch",
+                        "Hanging Windshield Wipers"
+            ],
+            "Bilek ve Ön Kol": [
+                        "Barbell Wrist Curl",
+                        "Reverse Barbell Wrist Curl",
+                        "Dumbbell Wrist Curl",
+                        "Farmer's Walk",
+                        "Plate Pinch Hold",
+                        "Dead Hang (Barfiks Barında Asılı Kalma)",
+                        "Reverse Curl (Barbell)",
+                        "Wrist Roller"
+            ],
+            "Calves (Baldır)": [
+                        "Standing Calf Raise",
+                        "Seated Calf Raise",
+                        "Leg Press Calf Raise",
+                        "Donkey Calf Raise",
+                        "Single-Leg Calf Raise",
+                        "Box Calf Raise"
+            ],
+            "Kardiyo": [
+                        "Treadmill Walk (Normal Yürüyüş)",
+                        "Incline Treadmill Walk (Rampalı/Eğimli Yürüyüş)",
+                        "Treadmill Run (Koşu)",
+                        "Elliptical Trainer (Eliptik Bisiklet)",
+                        "Stationary Bike / Upright Bike (Dikey Bisiklet)",
+                        "Recumbent Bike (Yatay Bisiklet)",
+                        "Spinning Bike (Spinning Bisikleti)",
+                        "Rowing Machine (Kürek Makinesi)",
+                        "Stair Climber / StairMaster (Merdiven Makinesi)",
+                        "Jump Rope (İp Atlama)",
+                        "Jumping Jacks",
+                        "Burpees",
+                        "Mountain Climbers",
+                        "Battle Ropes"
+            ]
+};
 
         const HEALTH_FIELDS = ["weight", "fat", "waist", "hip", "shoulder", "arm", "thigh", "neck"];
         const HEALTH_LABELS = {
@@ -1341,6 +1555,129 @@
             return uData.programs.length > 0 && uData.programs[0].id === prog.id;
         }
 
+        // Katalog araması: kaydedilmiş eski isimlerle farklı tire yazımlarını eşleştirir.
+        function normalizeExerciseText(value) {
+            return String(value || "").normalize("NFKC")
+                .replace(/[‐‑‒–—−]/g, "-").toLocaleLowerCase("tr-TR").trim();
+        }
+
+        function getCategoryExerciseList(category) {
+            const all = category === "Hepsi"
+                ? Object.values(EXERCISE_DATABASE).flat()
+                : (EXERCISE_DATABASE[category] || []);
+            const unique = new Set();
+            return all.filter(name => {
+                const key = normalizeExerciseText(name);
+                if (unique.has(key)) return false;
+                unique.add(key);
+                return true;
+            });
+        }
+
+        function isMetricCategory(category) {
+            return category === "Kardiyo" || category === "Calves (Baldır)" || category === "Baldır";
+        }
+
+        // Eski egzersiz tanımları da yeni ekrana uyum sağlar; geçmiş set kayıtları silinmez.
+        function isMetricExercise(exercise) {
+            if (!exercise) return false;
+            return exercise.trackingType === "metrics" ||
+                isMetricCategory(exercise.category || findCategoryForExercise(exercise.name));
+        }
+
+        function isMetricRecord(record) {
+            return !!(record && record.metrics && typeof record.metrics === "object");
+        }
+
+        function getDefaultMetricTypes(exerciseName) {
+            const treadmill = normalizeExerciseText(exerciseName).includes("treadmill");
+            return {
+                intensityType: treadmill ? "incline" : "level",
+                distanceType: treadmill ? "speed" : "distance"
+            };
+        }
+
+        // Ortak bileşen: mevcut program girişi ve geçmiş kayıt düzenlemesinde kullanılır.
+        function makeMetricFieldsMarkup(exerciseName, values = {}) {
+            const defaults = getDefaultMetricTypes(exerciseName);
+            const intensityType = values.intensityType || defaults.intensityType;
+            const distanceType = values.distanceType || defaults.distanceType;
+            const duration = values.duration ?? "";
+            const levelIncline = values.levelIncline ?? "";
+            const speedDistance = values.speedDistance ?? "";
+            return `
+                <div class="metric-grid">
+                    <div class="metric-field">
+                        <label>1. Süre (dakika) *</label>
+                        <input class="metric-duration" type="text" inputmode="decimal" value="${duration}"
+                               placeholder="Örn: 30" oninput="sanitizeDecimalInput(this)">
+                    </div>
+                    <div class="metric-field">
+                        <label>2. Seviye / Eğim *</label>
+                        <select class="metric-intensity-type">
+                            <option value="level" ${intensityType === "level" ? "selected" : ""}>Seviye</option>
+                            <option value="incline" ${intensityType === "incline" ? "selected" : ""}>Eğim (%)</option>
+                        </select>
+                        <input class="metric-level-incline" type="text" inputmode="decimal" value="${levelIncline}"
+                               placeholder="Örn: 5" oninput="sanitizeDecimalInput(this)">
+                    </div>
+                    <div class="metric-field">
+                        <label>3. Hız / Mesafe *</label>
+                        <select class="metric-distance-type">
+                            <option value="speed" ${distanceType === "speed" ? "selected" : ""}>Hız (km/sa)</option>
+                            <option value="distance" ${distanceType === "distance" ? "selected" : ""}>Mesafe (km)</option>
+                        </select>
+                        <input class="metric-speed-distance" type="text" inputmode="decimal" value="${speedDistance}"
+                               placeholder="Örn: 4.5" oninput="sanitizeDecimalInput(this)">
+                    </div>
+                </div>
+                <p class="metric-help">Üç ölçüm de zorunludur. Eğim 0 olabilir; ilgili cihazın
+                gösterdiği seviye ve hız/mesafe türünü seçiniz.</p>
+            `;
+        }
+
+        function getMetricFormValues(container) {
+            const durationStr = container.querySelector(".metric-duration")?.value.trim() ?? "";
+            const intensityStr = container.querySelector(".metric-level-incline")?.value.trim() ?? "";
+            const distanceStr = container.querySelector(".metric-speed-distance")?.value.trim() ?? "";
+            if (!durationStr || !intensityStr || !distanceStr) {
+                showToast("Süre, Seviye/Eğim ve Hız/Mesafe alanlarının tamamı zorunludur.", "warning");
+                return null;
+            }
+            const duration = Number(durationStr.replace(",", "."));
+            const levelIncline = Number(intensityStr.replace(",", "."));
+            const speedDistance = Number(distanceStr.replace(",", "."));
+            if (![duration, levelIncline, speedDistance].every(Number.isFinite) ||
+                duration <= 0 || levelIncline < 0 || speedDistance < 0) {
+                showToast("Süre sıfırdan büyük; diğer iki ölçüm sıfır veya pozitif olmalıdır.", "error");
+                return null;
+            }
+            return {
+                duration, levelIncline, speedDistance,
+                intensityType: container.querySelector(".metric-intensity-type")?.value === "incline" ? "incline" : "level",
+                distanceType: container.querySelector(".metric-distance-type")?.value === "distance" ? "distance" : "speed"
+            };
+        }
+
+        function formatHistorySummary(record, detailed = false) {
+            if (isMetricRecord(record)) {
+                const m = record.metrics;
+                const levelName = m.intensityType === "incline" ? "Eğim" : "Seviye";
+                const levelUnit = m.intensityType === "incline" ? "%" : "";
+                const distanceName = m.distanceType === "distance" ? "Mesafe" : "Hız";
+                const distanceUnit = m.distanceType === "distance" ? "km" : "km/sa";
+                return [
+                    `Süre: ${m.duration} dk`,
+                    `${levelName}: ${m.levelIncline}${levelUnit}`,
+                    `${distanceName}: ${m.speedDistance} ${distanceUnit}`
+                ].join(detailed ? "<br>" : " | ");
+            }
+            if (!Array.isArray(record.sets)) return "Kayıt detayı bulunamadı";
+            return record.sets.map((s, i) =>
+                `${detailed ? `#${i + 1}: ` : ""}${s.weight > 0 ? s.weight + "kg x " : ""}${s.reps}${detailed ? " tekrar" : "t"}`
+            ).join(detailed ? "<br>" : ", ");
+        }
+
         // WORKOUT & SETS LOGIC
         function renderProgramList() {
             const uData = getUserData(currentUser);
@@ -1393,24 +1730,23 @@
             const prog = uData.programs.find(p => p.id === selectedProgramId);
             const container = document.getElementById("exercisesContainer");
             container.innerHTML = "";
-
             if (!prog) return;
 
             prog.exercises.forEach((ex, exIdx) => {
                 const card = document.createElement("div");
                 card.className = "card";
-
-                const sortedHistory = sortHistoryByWorkoutDateDesc(
+                const exerciseHistory = sortHistoryByWorkoutDateDesc(
                     uData.history.filter(h => h.exerciseName === ex.name && isRecordForProgram(h, prog, uData))
-                ).slice(0, 5);
-
+                );
+                const sortedHistory = exerciseHistory.slice(0, 5);
+                const isMetric = isMetricExercise(ex);
                 let historyHtml = "";
-                if (sortedHistory.length > 0) {
+                if (sortedHistory.length) {
                     sortedHistory.forEach(h => {
-                        const setDokum = h.sets.map(s => `${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}t`).join(', ');
+                        const recordText = formatHistorySummary(h);
                         historyHtml += `
                             <div class="history-row">
-                                <span style="font-size:12px; flex:1;">📅 ${h.date}: ${setDokum}</span>
+                                <span style="font-size:12px; flex:1;">${h.date}: ${recordText}</span>
                                 <div style="display:flex; gap:4px;">
                                     <button class="btn btn-secondary" style="font-size:10px; padding:4px 7px;" onclick="openEditHistoryModal('${h.id}')" title="Düzelt">✏️</button>
                                     <button class="btn btn-danger" style="font-size:10px; padding:4px 7px;" onclick="deleteHistoryEntry('${h.id}')" title="Sil">🗑️</button>
@@ -1423,43 +1759,52 @@
                 }
 
                 const safeExName = ex.name.replace(/'/g, "\\'");
+                const lastMetric = exerciseHistory.find(isMetricRecord)?.metrics || {};
+                const inputAreaHtml = isMetric ? `
+                    <div id="metricForm_${exIdx}">
+                        ${makeMetricFieldsMarkup(ex.name, lastMetric)}
+                    </div>
+                    <button class="btn" style="width:100%; margin-top:12px; font-size:13px;"
+                        onclick="saveExerciseMetrics(${exIdx})">Ölçümleri Kaydet</button>
+                ` : `
+                    <table class="set-table" id="setTable_${exIdx}">
+                        <thead><tr>
+                            <th>Set</th>
+                            ${ex.weighted ? '<th>Ağırlık (kg)</th>' : ''}
+                            <th>Tekrar</th>
+                            <th>İşlem</th>
+                        </tr></thead>
+                        <tbody id="setTbody_${exIdx}"></tbody>
+                    </table>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn btn-secondary" style="flex:1; font-size:12px; padding:8px;"
+                            onclick="addSetRow(${exIdx}, '${safeExName}', ${ex.weighted === true})">+ Set Ekle</button>
+                        <button class="btn" style="flex:1; font-size:12px; padding:8px;"
+                            onclick="saveExerciseSets(${exIdx}, '${safeExName}', ${ex.weighted === true})">Seti Kaydet</button>
+                    </div>
+                `;
 
                 card.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
                         <h3 style="font-size:16px; color:var(--primary); margin:0;">${ex.name}</h3>
-                        <button type="button" class="btn-info-q" onclick="openExerciseImageModal('${safeExName}')" title="Hareket Nasıl Yapılır?">?</button>
+                        <button type="button" class="btn-info-q" onclick="openExerciseImageModal('${safeExName}')"
+                            title="Hareket Nasıl Yapılır?">?</button>
                     </div>
-
-                    <table class="set-table" id="setTable_${exIdx}">
-                        <thead>
-                            <tr>
-                                <th>Set</th>
-                                ${ex.weighted ? '<th>Ağırlık (kg)</th>' : ''}
-                                <th>Tekrar</th>
-                                <th>İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody id="setTbody_${exIdx}"></tbody>
-                    </table>
-
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button class="btn btn-secondary" style="flex:1; font-size:12px; padding:8px;" onclick="addSetRow(${exIdx}, '${safeExName}', ${ex.weighted})">+ Set Ekle</button>
-                        <button class="btn" style="flex:1; font-size:12px; padding:8px;" onclick="saveExerciseSets(${exIdx}, '${safeExName}', ${ex.weighted})">Seti Kaydet</button>
-                    </div>
-
+                    ${inputAreaHtml}
                     <div class="last-record-badge">
-                        <strong style="display:block; margin-bottom:4px; color:var(--secondary);">Son Kaydedilen Setler (${prog.name} - Son 5):</strong>
+                        <strong style="display:block; margin-bottom:4px; color:var(--secondary);">Son Kaydedilen Kayıtlar (${prog.name} - Son 5):</strong>
                         ${historyHtml}
                     </div>
                 `;
                 container.appendChild(card);
-                addSetRow(exIdx, ex.name, ex.weighted);
+                if (!isMetric) addSetRow(exIdx, ex.name, ex.weighted === true);
             });
         }
 
         // GEÇMİŞ KAYIT DÜZENLEME
         let editingHistoryId = null;
         let editingHistoryWeighted = true;
+        let editingHistoryMode = "sets";
 
         function openEditHistoryModal(historyId) {
             editingHistoryId = historyId;
@@ -1469,20 +1814,27 @@
 
             const prog = uData.programs.find(p => p.id === selectedProgramId);
             const exDef = prog ? prog.exercises.find(e => e.name === entry.exerciseName) : null;
-            editingHistoryWeighted = exDef ? exDef.weighted : entry.sets.some(s => s.weight > 0);
+            editingHistoryMode = isMetricRecord(entry) ? "metrics" : "sets";
+            editingHistoryWeighted = (Array.isArray(entry.sets) && entry.sets.some(s => Number(s.weight) > 0)) ||
+                (!!exDef && !isMetricExercise(exDef) && exDef.weighted === true);
 
-            document.getElementById("editHistoryMeta").innerText = `${prog ? prog.name + ' • ' : ''}${entry.exerciseName}`;
+            document.getElementById("editHistoryMeta").innerText = `${prog ? prog.name + " • " : ""}${entry.exerciseName}`;
             const dateInput = document.getElementById("editHistoryDateInput");
             dateInput.value = entry.date;
             dateInput.max = getTodayStr();
 
             const container = document.getElementById("editHistorySetsContainer");
             container.innerHTML = "";
-
-            entry.sets.forEach((s, sIdx) => {
-                appendEditHistoryRow(sIdx + 1, s.weight, s.reps);
-            });
-
+            const addSetBtn = document.getElementById("editHistoryAddSetButton");
+            if (editingHistoryMode === "metrics") {
+                addSetBtn.style.display = "none";
+                container.innerHTML = makeMetricFieldsMarkup(entry.exerciseName, entry.metrics);
+            } else {
+                addSetBtn.style.display = "flex";
+                (entry.sets || []).forEach((s, index) => {
+                    appendEditHistoryRow(index + 1, s.weight, s.reps);
+                });
+            }
             openModal("modalEditHistory");
         }
 
@@ -1533,9 +1885,9 @@
             if (!newDate) return showToast("Lütfen geçerli bir tarih seçin!", "warning");
             if (newDate > today) return showToast("Hata: Gelecek bir tarih girilemez!", "error");
 
-            const duplicateDate = uData.history.some(h => 
-                h.id !== editingHistoryId && 
-                h.exerciseName === entry.exerciseName && 
+            const duplicateDate = uData.history.some(h =>
+                h.id !== editingHistoryId &&
+                h.exerciseName === entry.exerciseName &&
                 h.date === newDate &&
                 (prog ? isRecordForProgram(h, prog, uData) : true)
             );
@@ -1543,34 +1895,41 @@
                 return showToast("Hata: Bu programda bu tarihte bu hareket için zaten başka bir kayıt mevcut!", "error");
             }
 
-            const rows = document.querySelectorAll("#editHistorySetsContainer > div");
-            if (rows.length === 0) return showToast("En az 1 set olmalıdır!", "warning");
-
-            const newSets = [];
-            for (let row of rows) {
-                const wInput = row.querySelector(".edit-set-weight");
-                const rInput = row.querySelector(".edit-set-reps");
-                const w = editingHistoryWeighted ? parseFloat(wInput ? wInput.value : 0) : 0;
-                const r = parseFloat(rInput ? rInput.value : 0);
-
-                if (!r || r <= 0 || (editingHistoryWeighted && (!w || w <= 0))) {
-                    return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
+            const container = document.getElementById("editHistorySetsContainer");
+            if (editingHistoryMode === "metrics") {
+                const values = getMetricFormValues(container);
+                if (!values) return;
+                entry.metrics = values;
+                entry.trackingType = "metrics";
+                entry.sets = [];
+            } else {
+                const rows = container.querySelectorAll(":scope > div");
+                if (!rows.length) return showToast("En az 1 set olmalıdır!", "warning");
+                const newSets = [];
+                for (const row of rows) {
+                    const weightInput = row.querySelector(".edit-set-weight");
+                    const repsInput = row.querySelector(".edit-set-reps");
+                    const weight = editingHistoryWeighted ? Number(weightInput?.value || 0) : 0;
+                    const reps = Number(repsInput?.value || 0);
+                    if (!Number.isFinite(reps) || reps <= 0 ||
+                        (editingHistoryWeighted && (!Number.isFinite(weight) || weight <= 0))) {
+                        return showToast("Hata: Ağırlık ve tekrar değerleri 0 veya negatif olamaz!", "error");
+                    }
+                    newSets.push({ weight, reps });
                 }
-                newSets.push({ weight: w, reps: r });
+                entry.sets = newSets;
             }
 
             entry.date = newDate;
-            entry.sets = newSets;
             if (prog) {
                 entry.programId = prog.id;
                 entry.programName = prog.name;
             }
             entry.userName = currentUser;
-
             saveUserData(currentUser, uData);
             closeModal("modalEditHistory");
             renderWorkoutExercises();
-            showToast("Geçmiş set kaydı güncellendi!", "info");
+            showToast("Geçmiş antrenman kaydı güncellendi!", "info");
             await syncToCloud(false);
         }
 
@@ -1663,6 +2022,40 @@
             await syncToCloud(false);
         }
 
+        async function saveExerciseMetrics(exIdx) {
+            const workoutDate = document.getElementById("workoutDateInput").value;
+            const today = getTodayStr();
+            if (!workoutDate) return showToast("Antrenman tarihi seçiniz!", "warning");
+            if (workoutDate > today) return showToast("Hata: Gelecek bir antrenman tarihi seçilemez!", "error");
+
+            const uData = getUserData(currentUser);
+            const prog = uData.programs.find(p => p.id === selectedProgramId);
+            if (!prog) return;
+            const exercise = prog.exercises[exIdx];
+            if (!exercise || !isMetricExercise(exercise)) return;
+            if (uData.history.some(h => h.exerciseName === exercise.name && h.date === workoutDate && isRecordForProgram(h, prog, uData))) {
+                return showToast("Bu hareket için seçilen tarihte zaten bir antrenman kaydı var.", "error");
+            }
+            const container = document.getElementById(`metricForm_${exIdx}`);
+            const metrics = getMetricFormValues(container);
+            if (!metrics) return;
+            uData.history.push({
+                id: "h_" + Date.now(),
+                userName: currentUser,
+                programId: prog.id,
+                programName: prog.name,
+                date: workoutDate,
+                exerciseName: exercise.name,
+                trackingType: "metrics",
+                metrics,
+                sets: []
+            });
+            saveUserData(currentUser, uData);
+            showToast(`${exercise.name} ölçümleri kaydedildi!`, "info");
+            renderWorkoutExercises();
+            await syncToCloud(false);
+        }
+
         async function deleteHistoryEntry(id) {
             if (!confirm("Bu set kaydını silmek istediğinize emin misiniz?")) return;
             const uData = getUserData(currentUser);
@@ -1689,7 +2082,7 @@
                 
                 let exListHtml = p.exercises.map((e, eIdx) => `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                        <span style="font-size:13px;">• ${e.name} <small style="color:var(--text-muted);">(${e.weighted ? 'Ağırlıklı' : 'Vücut Ağırlığı'})</small></span>
+                        <span style="font-size:13px;">• ${e.name} <small style="color:var(--text-muted);">(${isMetricExercise(e) ? 'Süre / Seviye / Hız-Mesafe' : (e.weighted ? 'Ağırlıklı' : 'Vücut Ağırlığı')})</small></span>
                         <div style="display:flex; gap:6px;">
                             <button class="btn btn-secondary btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="openEditExerciseModalForProg('${p.id}', ${eIdx})" title="Hareketi Düzenle">✏️</button>
                             <button class="btn btn-danger btn-icon" style="width:24px; height:24px; font-size:11px;" onclick="removeExerciseFromProgramEdit(${pIdx}, ${eIdx})" title="Hareketi Sil">✕</button>
@@ -1720,10 +2113,31 @@
         }
 
         function findCategoryForExercise(exName) {
+            const target = normalizeExerciseText(exName);
             for (const [cat, list] of Object.entries(EXERCISE_DATABASE)) {
-                if (list.includes(exName)) return cat;
+                if (list.some(name => normalizeExerciseText(name) === target)) return cat;
             }
-            return Object.keys(EXERCISE_DATABASE)[0];
+            return "Hepsi";
+        }
+
+        function populateCategorySelect(selected = "Hepsi") {
+            const catSelect = document.getElementById("categorySelect");
+            catSelect.innerHTML = '<option value="Hepsi">Hepsi (Tüm Kas Grupları)</option>';
+            Object.keys(EXERCISE_DATABASE).forEach(category => {
+                const opt = document.createElement("option");
+                opt.value = category;
+                opt.textContent = category;
+                catSelect.appendChild(opt);
+            });
+            catSelect.value = selected;
+        }
+
+        function updateExerciseInputMode() {
+            const name = selectedAddExerciseName;
+            const category = name ? findCategoryForExercise(name) : document.getElementById("categorySelect").value;
+            const metrics = isMetricCategory(category);
+            document.getElementById("weightedExerciseOption").style.display = metrics ? "none" : "block";
+            document.getElementById("metricExerciseHint").style.display = metrics ? "block" : "none";
         }
 
         function openAddExerciseModalForProg(progId) {
@@ -1734,11 +2148,9 @@
             document.getElementById("exerciseModalTitle").innerText = "Programa Egzersiz Ekle";
             document.getElementById("exerciseModalSaveBtn").innerText = "Ekle";
             document.getElementById("selectedExerciseBadge").style.display = "none";
+            document.getElementById("exerciseSearchInput").value = "";
             document.getElementById("isWeightedCheckbox").checked = true;
-
-            const catSelect = document.getElementById("categorySelect");
-            catSelect.innerHTML = "";
-            Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
+            populateCategorySelect("Hepsi");
             onCategoryChange();
             openModal("modalAddExercise");
         }
@@ -1754,19 +2166,15 @@
             document.getElementById("exerciseModalTitle").innerText = "Programdaki Hareketi Düzenle";
             document.getElementById("exerciseModalSaveBtn").innerText = "Güncelle";
 
-            const catSelect = document.getElementById("categorySelect");
-            catSelect.innerHTML = "";
-            Object.keys(EXERCISE_DATABASE).forEach(cat => catSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
-
-            const matchedCat = findCategoryForExercise(currentEx.name);
-            catSelect.value = matchedCat;
-            onCategoryChange();
-
+            const matchedCat = currentEx.category || findCategoryForExercise(currentEx.name);
+            populateCategorySelect(Object.hasOwn(EXERCISE_DATABASE, matchedCat) ? matchedCat : "Hepsi");
+            document.getElementById("exerciseSearchInput").value = currentEx.name;
             selectedAddExerciseName = currentEx.name;
             document.getElementById("selectedExerciseName").innerText = currentEx.name;
             document.getElementById("selectedExerciseBadge").style.display = "block";
             document.getElementById("exerciseSearchResults").style.display = "none";
-            document.getElementById("isWeightedCheckbox").checked = currentEx.weighted;
+            document.getElementById("isWeightedCheckbox").checked = currentEx.weighted !== false;
+            updateExerciseInputMode();
 
             openModal("modalAddExercise");
         }
@@ -1800,77 +2208,94 @@
         }
 
         function onCategoryChange() {
-            document.getElementById("exerciseSearchInput").value = "";
-            showExerciseDropdown();
+            const category = document.getElementById("categorySelect").value;
+            // Seçilen hareket artık bu kategoride değilse yalnızca seçimi temizle,
+            // kullanıcının egzersiz arama metnini hiçbir zaman silme.
+            const isInCategory = category === "Hepsi" || getCategoryExerciseList(category)
+                .some(name => normalizeExerciseText(name) === normalizeExerciseText(selectedAddExerciseName));
+            if (selectedAddExerciseName && !isInCategory) {
+                selectedAddExerciseName = "";
+                document.getElementById("selectedExerciseBadge").style.display = "none";
+            }
+            updateExerciseInputMode();
+            filterExercises();
         }
 
         function showExerciseDropdown() {
-            const cat = document.getElementById("categorySelect").value;
-            const exercises = EXERCISE_DATABASE[cat] || [];
-            const resultsDiv = document.getElementById("exerciseSearchResults");
-            resultsDiv.style.display = "block";
-            resultsDiv.innerHTML = "";
-
-            exercises.forEach(ex => {
-                const item = document.createElement("div");
-                item.className = "search-item";
-                item.innerText = ex;
-                item.onclick = () => selectExercise(ex);
-                resultsDiv.appendChild(item);
-            });
+            filterExercises();
         }
 
         function filterExercises() {
-            const q = document.getElementById("exerciseSearchInput").value.toLowerCase();
-            const cat = document.getElementById("categorySelect").value;
-            const exercises = EXERCISE_DATABASE[cat] || [];
+            const query = normalizeExerciseText(document.getElementById("exerciseSearchInput").value);
+            const category = document.getElementById("categorySelect").value;
             const resultsDiv = document.getElementById("exerciseSearchResults");
+            const filtered = getCategoryExerciseList(category).filter(name => normalizeExerciseText(name).includes(query));
+            if (selectedAddExerciseName && normalizeExerciseText(selectedAddExerciseName) !== query) {
+                selectedAddExerciseName = "";
+                document.getElementById("selectedExerciseBadge").style.display = "none";
+                updateExerciseInputMode();
+            }
+            resultsDiv.replaceChildren();
             resultsDiv.style.display = "block";
-
-            const filtered = exercises.filter(e => e.toLowerCase().includes(q));
-            resultsDiv.innerHTML = "";
-
-            filtered.forEach(ex => {
+            if (!filtered.length) {
+                const empty = document.createElement("div");
+                empty.className = "search-item";
+                empty.style.color = "var(--text-muted)";
+                empty.textContent = "Bu filtreye uygun hareket bulunamadı.";
+                resultsDiv.appendChild(empty);
+                return;
+            }
+            filtered.forEach(name => {
                 const item = document.createElement("div");
                 item.className = "search-item";
-                item.innerText = ex;
-                item.onclick = () => selectExercise(ex);
+                item.textContent = name;
+                item.onclick = () => selectExercise(name);
                 resultsDiv.appendChild(item);
             });
         }
 
         function selectExercise(exName) {
             selectedAddExerciseName = exName;
+            document.getElementById("exerciseSearchInput").value = exName;
             document.getElementById("selectedExerciseName").innerText = exName;
             document.getElementById("selectedExerciseBadge").style.display = "block";
             document.getElementById("exerciseSearchResults").style.display = "none";
+            updateExerciseInputMode();
         }
 
         function confirmExerciseAction() {
             if (!selectedAddExerciseName) return showToast("Lütfen bir hareket seçin!", "warning");
-            const isWeighted = document.getElementById("isWeightedCheckbox").checked;
+            const category = findCategoryForExercise(selectedAddExerciseName);
+            const fallbackCategory = document.getElementById("categorySelect").value;
+            const exerciseCategory = category !== "Hepsi" ? category : (fallbackCategory === "Hepsi" ? "" : fallbackCategory);
+            const metricMode = isMetricCategory(exerciseCategory);
+            const isWeighted = !metricMode && document.getElementById("isWeightedCheckbox").checked;
 
             const uData = getUserData(currentUser);
             const prog = uData.programs.find(p => p.id === selectedProgramId);
             if (!prog) return;
 
-            const isDuplicate = prog.exercises.some((ex, idx) => {
+            const duplicate = prog.exercises.some((ex, idx) => {
                 if (editingExerciseIndex !== null && idx === editingExerciseIndex) return false;
-                return ex.name.toLowerCase() === selectedAddExerciseName.toLowerCase();
+                return normalizeExerciseText(ex.name) === normalizeExerciseText(selectedAddExerciseName);
             });
-
-            if (isDuplicate) {
+            if (duplicate) {
                 return showToast(`Hata: "${selectedAddExerciseName}" bu programda zaten ekli! Aynı hareket 2 kez eklenemez.`, "error");
             }
 
+            const exerciseDef = {
+                name: selectedAddExerciseName,
+                weighted: isWeighted,
+                category: exerciseCategory,
+                trackingType: metricMode ? "metrics" : "sets"
+            };
             if (editingExerciseIndex !== null) {
-                prog.exercises[editingExerciseIndex] = { name: selectedAddExerciseName, weighted: isWeighted };
+                prog.exercises[editingExerciseIndex] = exerciseDef;
                 showToast("Hareket güncellendi!", "info");
             } else {
-                prog.exercises.push({ name: selectedAddExerciseName, weighted: isWeighted });
+                prog.exercises.push(exerciseDef);
                 showToast("Hareket eklendi!", "info");
             }
-
             saveUserData(currentUser, uData);
             closeModal("modalAddExercise");
             openEditProgramListModal();
@@ -2226,13 +2651,11 @@
             const selectedVal = document.getElementById("reportExerciseSelect").value;
             const container = document.getElementById("exerciseReportContainer");
             container.innerHTML = "";
-
             if (!selectedVal) return;
 
             const [targetProgId, targetExName] = selectedVal.split("|||");
             const uData = getUserData(currentUser);
             const prog = uData.programs.find(p => p.id === targetProgId);
-
             const filtered = sortHistoryByWorkoutDateDesc(
                 uData.history.filter(h => {
                     if (h.exerciseName !== targetExName) return false;
@@ -2240,13 +2663,12 @@
                     return (h.programId || "default") === targetProgId;
                 })
             );
-
             filtered.forEach(h => {
-                const setStr = h.sets.map((s, i) => `#${i+1}: ${s.weight > 0 ? s.weight+'kg x ' : ''}${s.reps}tekrar`).join('<br>');
+                const recordText = formatHistorySummary(h, true);
                 container.innerHTML += `
                     <div style="padding:8px 0; border-bottom:1px solid var(--border-color); font-size:13px;">
                         <strong style="color:var(--primary);">${h.date}</strong><br>
-                        ${setStr}
+                        ${recordText}
                     </div>
                 `;
             });
